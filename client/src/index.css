@@ -113,4 +113,47 @@
   @keyframes fade-up { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: translateY(0); } }
   @media (min-width: 640px) { .container { padding-inline: 2rem; } }
   @media (min-width: 1024px) { .container { max-width: 1440px; padding-inline: 3rem; } }
+
+  /* Enhanced Toast Notification Styles matching SkillLink Editorial Theme */
+  [data-sonner-toast] {
+    background-color: #fffdf8 !important;
+    color: #17221e !important;
+    border: 1px solid #d9ddd1 !important;
+    border-radius: 20px !important;
+    box-shadow: 0 20px 48px rgba(23, 34, 30, 0.16), 0 3px 10px rgba(23, 34, 30, 0.05) !important;
+    padding: 16px 20px !important;
+    font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif !important;
+  }
+
+  [data-sonner-toast] [data-title] {
+    color: #17221e !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  [data-sonner-toast] [data-description] {
+    color: #4a5c51 !important;
+    font-size: 12.5px !important;
+    line-height: 1.45 !important;
+    margin-top: 4px !important;
+    font-weight: 450 !important;
+  }
+
+  [data-sonner-toast][data-type="success"] {
+    border-left: 5px solid #779643 !important;
+  }
+
+  [data-sonner-toast][data-type="info"] {
+    border-left: 5px solid #365970 !important;
+  }
+
+  [data-sonner-toast][data-type="warning"] {
+    border-left: 5px solid #d99a26 !important;
+  }
+
+  [data-sonner-toast][data-type="error"] {
+    border-left: 5px solid #b95142 !important;
+  }
 }
+

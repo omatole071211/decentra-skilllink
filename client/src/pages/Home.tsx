@@ -8,7 +8,8 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
-import { ArrowRight, Award, Bell, BookOpen, Check, CheckCircle2, ChevronRight, CircleHelp, Clock, Compass, Copy, ExternalLink, FilePlus2, Filter, Globe, GraduationCap, Handshake, LayoutDashboard, Link2, Loader2, MapPin, Menu, MessageCircle, MoreHorizontal, NotebookPen, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Star, Target, Trash2, X, Zap } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowRight, Award, Bell, BookOpen, Check, CheckCircle2, CheckCheck, ChevronRight, CircleHelp, Clock, Compass, Copy, ExternalLink, FilePlus2, Filter, Globe, GraduationCap, Handshake, LayoutDashboard, Link2, Loader2, MapPin, Menu, MessageCircle, MoreHorizontal, NotebookPen, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Star, Target, Trash2, X, Zap } from "lucide-react";
 import { useMemo, useState } from "react";
 import { computeCampusMatches, type ComputedMatch, type MatchFilters } from "@/lib/matchmakingEngine";
 
@@ -238,12 +239,12 @@ export default function Home() {
   const handleAnalyzeRequest = () => {
     if (!requestTitle.trim() || !requestText.trim()) return;
     setIsAnalyzing(true);
-    
+
     setTimeout(() => {
-       const skills = mockExtractSkills(requestTitle + " " + requestText);
-       setExtractedSkills(skills);
-       setIsAnalyzing(false);
-       setAnalysisComplete(true);
+      const skills = mockExtractSkills(requestTitle + " " + requestText);
+      setExtractedSkills(skills);
+      setIsAnalyzing(false);
+      setAnalysisComplete(true);
     }, 1500);
   };
 
@@ -392,6 +393,66 @@ export default function Home() {
 
   const notify = (message: string, description?: string) => toast.success(message, { description });
   const go = (path: string) => { setLocation(path); setMobileNav(false); window.scrollTo({ top: 0, behavior: "smooth" }); };
+
+  // Interactive Notifications System
+  const [notifFilter, setNotifFilter] = useState<"all" | "unread">("all");
+  const [notifications, setNotifications] = useState([
+    {
+      id: "n1",
+      title: "Reciprocal match found",
+      description: "Maya Patel offers Figma & UI/UX in exchange for your Python skills.",
+      tags: ["Python ↔ Figma", "95% synergy"],
+      time: "10m ago",
+      read: false,
+      type: "match" as const,
+      actionPath: "/matches",
+      actionLabel: "Review match",
+    },
+    {
+      id: "n2",
+      title: "Exchange session confirmed",
+      description: "Rahul Mehta accepted your session on Thursday at 5:30 PM.",
+      tags: ["Thu, 5:30 PM", "Flask setup"],
+      time: "2h ago",
+      read: false,
+      type: "exchange" as const,
+      actionPath: "/exchanges",
+      actionLabel: "Open session",
+    },
+    {
+      id: "n3",
+      title: "New peer feedback received",
+      description: "Maya Chen left a review: 'Ananya made the hard parts feel easy to ask about.'",
+      tags: ["4.8 ★ record", "Presentation"],
+      time: "1d ago",
+      read: true,
+      type: "feedback" as const,
+      actionPath: "/history",
+      actionLabel: "View record",
+    },
+  ]);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  const markNotificationRead = (id: string, actionPath?: string) => {
+    setNotifications(prev => prev.map(n => (n.id === id ? { ...n, read: true } : n)));
+    if (actionPath) go(actionPath);
+  };
+
+  const dismissNotification = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const markAllNotificationsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    notify("All caught up", "All notifications have been marked as read.");
+  };
+
+  const clearAllNotifications = () => {
+    setNotifications([]);
+    notify("Notifications cleared", "All activity alerts have been cleared.");
+  };
   const propose = (match?: ComputedMatch | null) => {
     const target = match || activeMatch;
     if (!target) return;
@@ -399,16 +460,16 @@ export default function Home() {
     setProposalSent(target.id);
     notify("Exchange proposal sent", `${target.name} will see your offer to trade ${target.need[0] || "skills"} for ${target.offer[0] || "guidance"}.`);
   };
-  const createRequest = () => { 
-    if (!requestTitle.trim() || !requestText.trim()) return; 
-    setCreatedRequest({ title: requestTitle.trim(), description: requestText.trim() }); 
-    setRequestOpen(false); 
-    notify("Request added to your board", `SkillLink tagged ${extractedSkills.length} skills and refreshed your matches.`); 
-    setRequestTitle(""); 
-    setRequestText(""); 
+  const createRequest = () => {
+    if (!requestTitle.trim() || !requestText.trim()) return;
+    setCreatedRequest({ title: requestTitle.trim(), description: requestText.trim() });
+    setRequestOpen(false);
+    notify("Request added to your board", `SkillLink tagged ${extractedSkills.length} skills and refreshed your matches.`);
+    setRequestTitle("");
+    setRequestText("");
     setAnalysisComplete(false);
     setExtractedSkills([]);
-    go("/requests"); 
+    go("/requests");
   };
 
   const completeExchange = () => { setExchangeComplete(true); notify("Exchange marked complete", "Your contribution record is ready for feedback."); setFeedbackOpen(true); };
@@ -419,11 +480,201 @@ export default function Home() {
       <div className="flex items-center justify-between px-3"><div className="flex items-center gap-3"><LogoMark /><span className="display-font text-[18px] font-semibold tracking-[-.04em]">SkillLink</span></div><button className="lg:hidden" onClick={() => setMobileNav(false)} aria-label="Close navigation"><X size={18} /></button></div>
       <div className="mt-8 rounded-2xl border border-[#314239] bg-[#213128] p-3.5"><div className="flex items-start gap-2.5"><div className="mt-0.5 rounded-full bg-[#c6f36b] p-1 text-[#17221e]"><Zap size={12} fill="currentColor" /></div><div><p className="text-xs font-semibold text-[#dce8d9]">Your reciprocity streak</p><p className="mt-1 text-[12px] leading-4 text-[#9eb19e]">2 exchanges completed this month.</p><div className="mt-3 flex gap-1"><span className="h-1.5 w-8 rounded-full bg-[#c6f36b]" /><span className="h-1.5 w-8 rounded-full bg-[#c6f36b]" /><span className="h-1.5 w-8 rounded-full bg-[#556e5c]" /><span className="h-1.5 w-8 rounded-full bg-[#556e5c]" /></div></div></div></div>
       <div className="mt-8"><p className="meta-label px-3 text-[#819487]">Workspace</p><nav className="mt-2 space-y-1">{workspaceNavItems.map(item => { const active = item.path === activePath; return <button key={item.path} onClick={() => go(item.path)} className={`focus-ring flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${active ? "bg-[#c6f36b] font-bold text-[#17221e]" : "text-[#b7c6b9] hover:bg-[#263a2e] hover:text-white"}`}><item.icon size={17} strokeWidth={active ? 2.5 : 1.8} /><span className="flex-1">{item.label}</span>{item.count && <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? "bg-[#17221e] text-[#c6f36b]" : "bg-[#34493a] text-[#c7d7c7]"}`}>{item.count}</span>}</button>; })}</nav></div>
-      <div className="mt-auto"><div className="mb-5 border-t border-[#314239] pt-4"><button onClick={() => notify("Settings are coming next", "Your exchange preferences will live here.")} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[#b7c6b9] hover:bg-[#263a2e] hover:text-white"><Settings2 size={17} /><span>Exchange preferences</span></button></div><div className="flex items-center gap-3 rounded-2xl bg-[#213128] p-3"><Avatar className="h-9 w-9 border border-[#5b7763]"><AvatarFallback className="bg-[#e7c6af] text-xs font-bold text-[#17221e]">{profile.initials}</AvatarFallback></Avatar><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{profile.name}</p><p className="truncate text-[11px] text-[#9eb19e]">{profile.institution}</p></div><button onClick={() => go("/profile")} className="text-[#9eb19e] hover:text-[#c6f36b]" aria-label="Open profile"><ChevronRight size={16} /></button></div></div>
+      <div className="mt-auto"><div className="flex items-center gap-3 rounded-2xl bg-[#213128] p-3"><Avatar className="h-9 w-9 border border-[#5b7763]"><AvatarFallback className="bg-[#e7c6af] text-xs font-bold text-[#17221e]">{profile.initials}</AvatarFallback></Avatar><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{profile.name}</p><p className="truncate text-[11px] text-[#9eb19e]">{profile.institution}</p></div><button onClick={() => go("/profile")} className="text-[#9eb19e] hover:text-[#c6f36b]" aria-label="Open profile"><ChevronRight size={16} /></button></div></div>
     </aside>
     {mobileNav && <button className="fixed inset-0 z-30 bg-[#17221e]/40 lg:hidden" onClick={() => setMobileNav(false)} aria-label="Close navigation overlay" />}
     <main className="min-h-screen lg:pl-[278px]">
-      <header className="sticky top-0 z-20 border-b border-[#dedfd6]/80 bg-[#f6f3ec]/90 backdrop-blur-md"><div className="container flex h-[72px] items-center justify-between gap-4"><div className="flex items-center gap-3"><button className="rounded-lg p-2 hover:bg-[#e8e6de] lg:hidden" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={20} /></button><div className="hidden items-center gap-2 text-sm text-[#718078] sm:flex"><span className="h-2 w-2 rounded-full bg-[#c6f36b]" /><span>{profile.institution}</span><span className="text-[#b0b8ad]">/</span><span className="text-[#17221e]">Student workspace</span></div><div className="sm:hidden"><p className="display-font font-semibold">SkillLink</p></div></div><div className="flex items-center gap-2 sm:gap-3"><button onClick={() => notify("No new notifications", "You are all caught up.")} className="relative rounded-full p-2 text-[#536159] hover:bg-[#e8e6de]" aria-label="Notifications"><Bell size={18} /><span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-[#b95142]" /></button><div className="hidden h-7 w-px bg-[#d9ddd1] sm:block" /><Button variant="outline" onClick={() => { try { startLogin(); } catch { notify("Preview mode is active", "Manus login will be available when this project is connected."); } }} className="h-9 rounded-full border-[#cdd5c8] bg-transparent px-3 text-xs font-semibold text-[#3f5547] hover:bg-[#e8e6de]">Sign in <ArrowRight size={13} /></Button></div></div></header>
+      <header className="sticky top-0 z-20 border-b border-[#dedfd6]/80 bg-[#f6f3ec]/90 backdrop-blur-md"><div className="container flex h-[72px] items-center justify-between gap-4"><div className="flex items-center gap-3"><button className="rounded-lg p-2 hover:bg-[#e8e6de] lg:hidden" onClick={() => setMobileNav(true)} aria-label="Open navigation"><Menu size={20} /></button><div className="hidden items-center gap-2 text-sm text-[#718078] sm:flex"><span className="h-2 w-2 rounded-full bg-[#c6f36b]" /><span>{profile.institution}</span><span className="text-[#b0b8ad]">/</span><span className="text-[#17221e]">Student workspace</span></div><div className="sm:hidden"><p className="display-font font-semibold">SkillLink</p></div></div><div className="flex items-center gap-2 sm:gap-3">
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              className="relative rounded-full p-2.5 text-[#536159] transition-all hover:bg-[#e8e6de] hover:text-[#17221e] focus:outline-none focus:ring-2 focus:ring-[#c6f36b]"
+              aria-label="Notifications"
+            >
+              <Bell size={18} />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#17221e] px-1 text-[9px] font-bold text-[#c6f36b] ring-2 ring-[#f6f3ec]">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            sideOffset={10}
+            className="w-[380px] sm:w-[420px] rounded-2xl border border-[#d4d9cc] bg-[#fffdf8] p-0 shadow-[0_24px_60px_rgba(23,34,30,0.18)] overflow-hidden"
+          >
+            {/* Header with warm subtle background & Filter tabs */}
+            <div className="border-b border-[#e9ede2] bg-[#f7f5ee] px-4 pt-3.5 pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#e1efc4] text-[#4d6a27]">
+                    <Bell size={13} />
+                  </div>
+                  <h3 className="display-font text-sm font-bold text-[#17221e]">Activity & Alerts</h3>
+                  {unreadCount > 0 && (
+                    <span className="rounded-full bg-[#c6f36b] px-2 py-0.5 text-[10px] font-bold text-[#17221e]">
+                      {unreadCount} unread
+                    </span>
+                  )}
+                </div>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllNotificationsRead}
+                    className="flex items-center gap-1 text-[11px] font-semibold text-[#536f32] transition-colors hover:text-[#384e1f] hover:underline"
+                  >
+                    <CheckCheck size={13} />
+                    <span>Mark all read</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Filter tabs */}
+              <div className="mt-3 flex items-center gap-1.5">
+                <button
+                  onClick={() => setNotifFilter("all")}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                    notifFilter === "all"
+                      ? "bg-[#17221e] text-[#f6f3ec]"
+                      : "bg-[#eae7dd] text-[#65746b] hover:bg-[#dedbd0] hover:text-[#17221e]"
+                  }`}
+                >
+                  All ({notifications.length})
+                </button>
+                <button
+                  onClick={() => setNotifFilter("unread")}
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                    notifFilter === "unread"
+                      ? "bg-[#17221e] text-[#f6f3ec]"
+                      : "bg-[#eae7dd] text-[#65746b] hover:bg-[#dedbd0] hover:text-[#17221e]"
+                  }`}
+                >
+                  Unread ({unreadCount})
+                </button>
+              </div>
+            </div>
+
+            {/* Notifications scroll list */}
+            <div className="max-h-[430px] divide-y divide-[#edf0e7] overflow-y-auto">
+              {(notifFilter === "unread" ? notifications.filter(n => !n.read) : notifications).length === 0 ? (
+                <div className="py-12 px-6 text-center">
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#e8f2d2] text-[#557827]">
+                    <CheckCircle2 size={24} />
+                  </div>
+                  <p className="mt-3 display-font font-semibold text-[#17221e]">All caught up!</p>
+                  <p className="mt-1 text-xs text-[#718078] max-w-[240px] mx-auto">
+                    {notifFilter === "unread"
+                      ? "You don't have any unread notifications right now."
+                      : "No activity yet. When peers match or accept exchanges, you'll see them here."}
+                  </p>
+                  <button
+                    onClick={() => go("/matches")}
+                    className="mt-4 inline-flex items-center gap-1 rounded-full bg-[#17221e] px-3.5 py-1.5 text-xs font-semibold text-[#f6f3ec] hover:bg-[#2c4034]"
+                  >
+                    <span>Discover matches</span>
+                    <ArrowRight size={12} />
+                  </button>
+                </div>
+              ) : (
+                (notifFilter === "unread" ? notifications.filter(n => !n.read) : notifications).map(item => (
+                  <div
+                    key={item.id}
+                    onClick={() => markNotificationRead(item.id, item.actionPath)}
+                    className={`group relative cursor-pointer p-4 transition-all hover:bg-[#f6f8ef] ${
+                      !item.read ? "bg-[#fffdf8] border-l-4 border-l-[#779643]" : "bg-white/60 opacity-85 hover:opacity-100"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Icon avatar */}
+                      <div
+                        className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-xs ${
+                          item.type === "match"
+                            ? "bg-[#c6f36b] text-[#17221e]"
+                            : item.type === "exchange"
+                            ? "bg-[#dbeaf5] text-[#2c536d]"
+                            : "bg-[#fcedcc] text-[#734f0e]"
+                        }`}
+                      >
+                        {item.type === "match" ? (
+                          <Sparkles size={15} />
+                        ) : item.type === "exchange" ? (
+                          <Handshake size={15} />
+                        ) : (
+                          <Star size={15} />
+                        )}
+                      </div>
+
+                      {/* Content details */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className={`text-xs font-bold ${!item.read ? "text-[#17221e]" : "text-[#47574b]"}`}>
+                            {item.title}
+                          </p>
+                          <span className="text-[10px] text-[#9aa69c] font-medium shrink-0 bg-[#eeece5] px-1.5 py-0.5 rounded-full">
+                            {item.time}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs leading-5 text-[#5e6d62]">{item.description}</p>
+
+                        {/* Metadata Tags */}
+                        {item.tags && item.tags.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {item.tags.map(tag => (
+                              <span
+                                key={tag}
+                                className="rounded-md bg-[#edf2e4] px-2 py-0.5 text-[10px] font-semibold text-[#4e682d]"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Action link & Dismiss */}
+                        <div className="mt-2.5 flex items-center justify-between">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#446221] group-hover:text-[#17221e]">
+                            <span>{item.actionLabel}</span>
+                            <ArrowRight size={11} className="transition-transform group-hover:translate-x-0.5" />
+                          </span>
+
+                          <button
+                            onClick={e => dismissNotification(e, item.id)}
+                            title="Dismiss notification"
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-md text-[#9aa69c] hover:bg-[#e4e8dc] hover:text-[#17221e] transition-opacity"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Unread indicator dot */}
+                      {!item.read && (
+                        <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#779643] ring-2 ring-[#e2eed2]" />
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Footer with quick summary and clear all */}
+            {notifications.length > 0 && (
+              <div className="flex items-center justify-between border-t border-[#e9ede2] bg-[#f7f5ee] px-4 py-2.5">
+                <span className="text-[11px] text-[#718078]">
+                  {notifications.length} total alert{notifications.length > 1 ? "s" : ""}
+                </span>
+                <button
+                  onClick={clearAllNotifications}
+                  className="flex items-center gap-1 text-[11px] font-medium text-[#718078] hover:text-[#b95142] transition-colors"
+                >
+                  <Trash2 size={12} />
+                  <span>Clear all</span>
+                </button>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
+        <div className="hidden h-7 w-px bg-[#d9ddd1] sm:block" /><Button variant="outline" onClick={() => { try { startLogin(); } catch { notify("Preview mode is active", "Manus login will be available when this project is connected."); } }} className="h-9 rounded-full border-[#cdd5c8] bg-transparent px-3 text-xs font-semibold text-[#3f5547] hover:bg-[#e8e6de]">Sign in <ArrowRight size={13} /></Button></div></div></header>
       <div className="container py-8 lg:py-11"><div className="fade-up flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="meta-label text-[#779643]">{meta.eyebrow}</p><h1 className="display-font mt-2 max-w-[700px] text-[34px] font-semibold leading-[1.03] tracking-[-.065em] text-[#17221e] sm:text-[46px]">{meta.title}</h1><p className="mt-3 max-w-[620px] text-[15px] leading-6 text-[#65746b]">{meta.description}</p></div><Button onClick={() => setRequestOpen(true)} className="h-11 shrink-0 rounded-full bg-[#17221e] px-5 text-sm font-semibold text-[#f6f3ec] shadow-[0_8px_20px_rgba(23,34,30,.13)] hover:bg-[#2c4034]"><Plus size={16} /> New request</Button></div>
 
         {currentSection === "overview" && <div className="mt-10 space-y-10"><section className="grid gap-4 sm:grid-cols-3"><Metric value="12" label="Exchanges completed" note="+3 since September" /><Metric value="4.8/5" label="Peer feedback" note="Across 11 completed swaps" tone="lime" /><Metric value="86%" label="Follow-through" note="Your strongest signal" tone="blue" /></section><section className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]"><div><SectionHeading eyebrow="Recommended next" title="A strong two-way fit" action={<button onClick={() => go("/matches")} className="hidden items-center gap-1 text-xs font-bold text-[#536f32] sm:flex">View all {computedMatches.length} matches <ArrowRight size={14} /></button>} />{topMatch ? (<div className="rounded-[22px] border border-[#ccd8c4] bg-[#e8f2d2] p-5 sm:p-6"><div className="flex flex-col justify-between gap-5 sm:flex-row"><div><div className="flex items-center gap-2"><Tag tone="lime">{topMatch.score}% indicative</Tag><span className="meta-label text-[#779643]">{topMatch.kind}</span></div><div className="mt-4 flex items-center gap-3"><Avatar className="h-12 w-12 border-2 border-white"><AvatarFallback style={{ background: topMatch.avatar }} className="font-bold text-[#17221e]">{topMatch.initials}</AvatarFallback></Avatar><div><h3 className="display-font text-xl font-semibold tracking-[-.04em]">{topMatch.name}</h3><p className="text-xs text-[#65746b]">{topMatch.role}</p></div></div></div><div className="rounded-2xl bg-[#f7faef]/80 p-4 sm:max-w-[235px]"><p className="meta-label text-[#779643]">The exchange</p><div className="mt-2 flex items-center gap-2 text-sm font-semibold"><span>{topMatch.need[0] || "Python"}</span><ArrowRight size={14} className="text-[#779643]" /><span>{topMatch.offer[0] || "UI/UX"}</span></div><p className="mt-2 text-xs leading-4 text-[#65746b]">{topMatch.mutualBenefit.synergyNote}</p></div></div><Separator className="my-5 bg-[#c9d9bc]" /><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><p className="max-w-[540px] text-sm leading-5 text-[#526056]"><Sparkles size={14} className="mr-1 inline text-[#779643]" /><strong className="text-[#34482b]">Why now?</strong> {topMatch.explanation}</p><div className="flex gap-2"><Button variant="outline" onClick={() => { setSelectedMatch(topMatch); setMatchOpen(true); }} className="h-9 rounded-full border-[#b9cba8] bg-transparent text-xs font-semibold hover:bg-[#f7faef]">Reasoning</Button><Button onClick={() => propose(topMatch)} disabled={proposalSent === topMatch.id} className="h-9 rounded-full bg-[#17221e] text-xs text-[#f6f3ec] hover:bg-[#2c4034]">{proposalSent === topMatch.id ? "Proposal sent" : "Propose exchange"}</Button></div></div></div>) : (<div className="rounded-[22px] border border-[#d9ddd1] bg-[#fffdf8] p-6 text-center text-xs text-[#718078]">Update your skill inventory or learning goals to generate recommendations.</div>)}</div><div><SectionHeading eyebrow="Your board" title="Open requests" action={<button onClick={() => go("/requests")} className="hidden items-center gap-1 text-xs font-bold text-[#536f32] sm:flex">Manage <ArrowRight size={14} /></button>} /><div className="space-y-3"><div className="lift rounded-2xl border border-[#d9ddd1] bg-[#fffdf8] p-4"><div className="flex items-start justify-between gap-4"><div className="flex gap-3"><div className="rounded-xl bg-[#dbeaf5] p-2.5 text-[#365970]"><Target size={17} /></div><div><h3 className="font-semibold">UI for hackathon website</h3><p className="mt-1 text-xs text-[#718078]">Need UI/UX · 2 responses</p></div></div><MoreHorizontal size={17} className="text-[#9aa69c]" /></div><div className="mt-4 flex items-center justify-between"><span className="text-xs font-semibold text-[#536159]">Open for matching</span><span className="text-xs text-[#718078]">Updated 2h ago</span></div></div><div className="lift rounded-2xl border border-[#d9ddd1] bg-[#fffdf8] p-4"><div className="flex items-start gap-3"><div className="rounded-xl bg-[#ece6d1] p-2.5 text-[#776643]"><GraduationCap size={17} /></div><div><h3 className="font-semibold">Practice product storytelling</h3><p className="mt-1 text-xs text-[#718078]">Want to learn · 1 response</p></div></div><div className="mt-4 flex items-center justify-between"><span className="text-xs font-semibold text-[#536159]">Open for matching</span><span className="text-xs text-[#718078]">Updated yesterday</span></div></div></div></div></section><section><SectionHeading eyebrow="Keep the loop going" title="Recent exchanges" action={<button onClick={() => go("/history")} className="flex items-center gap-1 text-xs font-bold text-[#536f32]">Full history <ArrowRight size={14} /></button>} /><div className="overflow-hidden rounded-2xl border border-[#d9ddd1] bg-[#fffdf8]"><div className="hidden grid-cols-[1.4fr_1fr_1fr_100px] gap-4 border-b border-[#e3e5dd] px-5 py-3 sm:grid"><span className="meta-label text-[#9aa69c]">Collaborator</span><span className="meta-label text-[#9aa69c]">Exchange</span><span className="meta-label text-[#9aa69c]">Date</span><span className="meta-label text-right text-[#9aa69c]">Status</span></div>{history.map(exchange => <div key={exchange.with} className="grid gap-3 border-b border-[#e9eae4] px-5 py-4 last:border-0 sm:grid-cols-[1.4fr_1fr_1fr_100px] sm:items-center sm:gap-4"><div className="flex items-center gap-3"><Avatar className="h-8 w-8"><AvatarFallback style={{ background: exchange.color }} className="text-[10px] font-bold text-[#17221e]">{exchange.initials}</AvatarFallback></Avatar><span className="text-sm font-semibold">{exchange.with}</span></div><span className="text-sm text-[#65746b]">{exchange.skill}</span><span className="text-sm text-[#65746b]">{exchange.date}</span><span className="flex items-center gap-1.5 text-xs font-semibold text-[#618033] sm:justify-end"><CheckCircle2 size={14} /> Completed</span></div>)}</div></section></div>}
@@ -437,11 +688,10 @@ export default function Home() {
                   <button
                     key={value}
                     onClick={() => setFilters(prev => ({ ...prev, kind: value }))}
-                    className={`whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors ${
-                      filters.kind === value
+                    className={`whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors ${filters.kind === value
                         ? "border-[#17221e] bg-[#17221e] text-[#f6f3ec]"
                         : "border-[#d1d8cc] bg-transparent text-[#65746b] hover:bg-[#e8e6de]"
-                    }`}
+                      }`}
                   >
                     {value === "Reciprocal" ? "Reciprocal (Two-Way)" : value === "Direct" ? "Direct (One-Way)" : "All matches"}
                   </button>
@@ -570,7 +820,7 @@ export default function Home() {
           </div>
         )}
 
-        {currentSection === "requests" && <div className="mt-10"><div className="mb-6 flex items-center justify-between"><p className="text-sm text-[#65746b]">Requests are the starting point for your next exchange.</p><Button onClick={() => setRequestOpen(true)} className="h-10 rounded-full bg-[#17221e] text-xs text-[#f6f3ec] hover:bg-[#2c4034]"><FilePlus2 size={15} /> New request</Button></div><div className="grid gap-4 md:grid-cols-2"><div className="rounded-2xl border border-[#ccd8c4] bg-[#e8f2d2] p-5"><div className="flex items-center justify-between"><Tag tone="lime">Open · 2 responses</Tag><MoreHorizontal size={17} className="text-[#65746b]" /></div><h3 className="display-font mt-5 text-xl font-semibold tracking-[-.04em]">UI for hackathon website</h3><p className="mt-2 text-sm leading-5 text-[#526056]">I have the product flow and frontend logic, but I need help turning it into a clear visual system with Figma-ready screens.</p><div className="mt-5 flex flex-wrap gap-2"><Tag tone="blue">UI/UX</Tag><Tag tone="blue">Figma</Tag><Tag tone="blue">Web design</Tag></div><Separator className="my-5 bg-[#c9d9bc]" /><div className="flex items-center justify-between text-xs text-[#65746b]"><span className="flex items-center gap-1.5"><Sparkles size={13} /> AI understood 4 related skills</span><span>Updated 2h ago</span></div></div>{createdRequest && <div className="rounded-2xl border border-[#ccd8c4] bg-[#eef4e7] p-5"><div className="flex items-center justify-between"><Tag tone="lime">New · matching now</Tag><Sparkles size={16} className="text-[#779643]" /></div><h3 className="display-font mt-5 text-xl font-semibold tracking-[-.04em]">{createdRequest.title}</h3><p className="mt-2 text-sm leading-5 text-[#526056]">{createdRequest.description}</p><div className="mt-5 flex items-center gap-2 text-xs text-[#65746b]"><Sparkles size={13} /> AI understood related skills · Refreshing matches</div></div>}<button onClick={() => setRequestOpen(true)} className="lift flex min-h-[250px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#b9c5b8] bg-[#f8f7f1] p-6 text-center hover:border-[#7ca93a] hover:bg-[#f4f8eb]"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e1efc4] text-[#58792a]"><Plus size={20} /></span><span className="mt-4 display-font font-semibold">Add another request</span><span className="mt-1 max-w-[220px] text-xs leading-5 text-[#718078]">Projects, learning goals, hackathon gaps — start with the context.</span></button></div></div>}
+        {currentSection === "requests" && <div className="mt-10"><div className="mb-6"><p className="text-sm text-[#65746b]">Requests are the starting point for your next exchange.</p></div><div className="grid gap-4 md:grid-cols-2"><div className="rounded-2xl border border-[#ccd8c4] bg-[#e8f2d2] p-5"><div className="flex items-center justify-between"><Tag tone="lime">Open · 2 responses</Tag><MoreHorizontal size={17} className="text-[#65746b]" /></div><h3 className="display-font mt-5 text-xl font-semibold tracking-[-.04em]">UI for hackathon website</h3><p className="mt-2 text-sm leading-5 text-[#526056]">I have the product flow and frontend logic, but I need help turning it into a clear visual system with Figma-ready screens.</p><div className="mt-5 flex flex-wrap gap-2"><Tag tone="blue">UI/UX</Tag><Tag tone="blue">Figma</Tag><Tag tone="blue">Web design</Tag></div><Separator className="my-5 bg-[#c9d9bc]" /><div className="flex items-center justify-between text-xs text-[#65746b]"><span className="flex items-center gap-1.5"><Sparkles size={13} /> AI understood 4 related skills</span><span>Updated 2h ago</span></div></div>{createdRequest && <div className="rounded-2xl border border-[#ccd8c4] bg-[#eef4e7] p-5"><div className="flex items-center justify-between"><Tag tone="lime">New · matching now</Tag><Sparkles size={16} className="text-[#779643]" /></div><h3 className="display-font mt-5 text-xl font-semibold tracking-[-.04em]">{createdRequest.title}</h3><p className="mt-2 text-sm leading-5 text-[#526056]">{createdRequest.description}</p><div className="mt-5 flex items-center gap-2 text-xs text-[#65746b]"><Sparkles size={13} /> AI understood related skills · Refreshing matches</div></div>}<button onClick={() => setRequestOpen(true)} className="lift flex min-h-[250px] flex-col items-center justify-center rounded-2xl border border-dashed border-[#b9c5b8] bg-[#f8f7f1] p-6 text-center hover:border-[#7ca93a] hover:bg-[#f4f8eb]"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#e1efc4] text-[#58792a]"><Plus size={20} /></span><span className="mt-4 display-font font-semibold">Add another request</span><span className="mt-1 max-w-[220px] text-xs leading-5 text-[#718078]">Projects, learning goals, hackathon gaps — start with the context.</span></button></div></div>}
 
         {currentSection === "exchanges" && <div className="mt-10 grid gap-6 xl:grid-cols-[1.1fr_.9fr]"><section className="rounded-[22px] border border-[#d9ddd1] bg-[#fffdf8] p-5 sm:p-7"><div className="flex items-start justify-between gap-4"><div><Tag tone="lime">{exchangeComplete ? "Completed" : "In progress"}</Tag><h2 className="display-font mt-4 text-2xl font-semibold tracking-[-.05em]">Python ↔ UI/UX</h2><p className="mt-1 text-sm text-[#718078]">with Rahul Mehta · Started Sep 29</p></div><div className="rounded-2xl bg-[#e8f2d2] px-3 py-2 text-right"><p className="meta-label text-[#779643]">Next session</p><p className="mt-1 text-sm font-bold">Thu, 5:30 PM</p></div></div><div className="mt-8 grid gap-3 sm:grid-cols-2"><div className="rounded-2xl bg-[#eef4e7] p-4"><p className="meta-label text-[#779643]">You are giving</p><p className="mt-2 font-semibold">Python · Flask setup</p><p className="mt-1 text-xs leading-5 text-[#65746b]">A 45-minute walkthrough of your API structure and local setup.</p></div><div className="rounded-2xl bg-[#e6f0f7] p-4"><p className="meta-label text-[#557991]">You are learning</p><p className="mt-2 font-semibold">UI/UX · Figma foundations</p><p className="mt-1 text-xs leading-5 text-[#65746b]">Turn the hackathon flow into a simple, testable screen system.</p></div></div><div className="mt-7"><p className="meta-label text-[#9aa69c]">Exchange progress</p><div className="mt-3 flex items-center gap-2"><div className="h-2 flex-1 rounded-full bg-[#e3e6dc]"><div className={`h-2 rounded-full bg-[#7ca93a] ${exchangeComplete ? "w-full" : "w-2/3"}`} /></div><span className="text-xs font-bold text-[#58792a]">{exchangeComplete ? "3 / 3" : "2 / 3"}</span></div><div className="mt-4 space-y-3 text-sm"><div className="flex items-center gap-3 text-[#536159]"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#c6f36b] text-[#17221e]"><Check size={13} strokeWidth={3} /></span> Agreed what we will exchange</div><div className="flex items-center gap-3 text-[#536159]"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#c6f36b] text-[#17221e]"><Check size={13} strokeWidth={3} /></span> Scheduled the working session</div><div className={`flex items-center gap-3 ${exchangeComplete ? "text-[#536159]" : "text-[#9aa69c]"}`}><span className={`flex h-6 w-6 items-center justify-center rounded-full ${exchangeComplete ? "bg-[#c6f36b] text-[#17221e]" : "border border-[#cbd4c6] text-[#9aa69c]"}`}>{exchangeComplete ? <Check size={13} strokeWidth={3} /> : "3"}</span> Mark the exchange complete</div></div></div><div className="mt-7 flex flex-col gap-3 border-t border-[#e3e5dd] pt-5 sm:flex-row"><Button variant="outline" onClick={() => { void navigator.clipboard?.writeText("https://meet.google.com/skilllink-demo"); notify("Meeting link copied", "https://meet.google.com/skilllink-demo"); }} className="h-10 rounded-full border-[#cbd4c6] text-xs font-semibold"><ExternalLink size={14} /> Open meeting link</Button><Button onClick={completeExchange} disabled={exchangeComplete} className="h-10 rounded-full bg-[#17221e] text-xs text-[#f6f3ec] hover:bg-[#2c4034]">{exchangeComplete ? <><Check size={14} /> Completed</> : <>Mark exchange complete <ArrowRight size={14} /></>}</Button></div></section><aside className="rounded-[22px] bg-[#17221e] p-6 text-[#edf1e9]"><div className="flex items-center gap-2 text-[#c6f36b]"><CircleHelp size={16} /><span className="meta-label">Keep it fair</span></div><h3 className="display-font mt-4 text-2xl font-semibold leading-tight tracking-[-.05em]">The best exchanges leave both people with a next step.</h3><p className="mt-4 text-sm leading-6 text-[#b7c6b9]">Close the loop even if the session was small. Your feedback helps the next person understand how you collaborate — not who you are as a person.</p><div className="mt-8 rounded-2xl border border-[#3b5142] bg-[#203027] p-4"><div className="flex items-center gap-3"><Avatar className="h-9 w-9 border border-[#5b7763]"><AvatarFallback className="bg-[#e7c6af] text-xs font-bold text-[#17221e]">RM</AvatarFallback></Avatar><div><p className="text-sm font-semibold">{feedbackSent ? "Feedback is part of your record" : "Rahul is waiting on your feedback"}</p><p className="mt-0.5 text-xs text-[#9eb19e]">{feedbackSent ? "Thanks for closing the loop" : "Takes about 60 seconds"}</p></div></div></div></aside></div>}
 
@@ -578,21 +828,21 @@ export default function Home() {
 
         {currentSection === "profile" && <div className="mt-10 grid gap-6 xl:grid-cols-[.85fr_1.15fr]"><section className="rounded-[22px] border border-[#d9ddd1] bg-[#fffdf8] p-6"><div className="flex items-center gap-4"><Avatar className="h-16 w-16 border-4 border-[#e8f2d2]"><AvatarFallback className="bg-[#e7c6af] text-xl font-bold text-[#17221e]">{profile.initials}</AvatarFallback></Avatar><div><h2 className="display-font text-2xl font-semibold tracking-[-.05em]">{profile.name}</h2><p className="mt-1 text-sm text-[#718078]">{profile.department} · {profile.institution}</p><p className="text-xs text-[#9aa69c]">Class of {profile.graduationYear}</p></div></div><p className="mt-5 text-sm leading-6 text-[#536159]">{profile.bio}</p>
 
-        {/* Academic & Contact Metadata Strip */}
-        <div className="mt-6 rounded-2xl border border-[#d9ddd1] bg-[#f8f7f1] p-4 text-xs space-y-2">
-          <div className="flex items-center justify-between"><span className="font-semibold text-[#17221e] flex items-center gap-1.5"><ShieldCheck size={14} className="text-[#779643]" /> Discovery Visibility</span><span className="rounded-full bg-[#e1efc4] px-2 py-0.5 text-[10px] font-bold text-[#496724]">{profile.visibility === "campus_only" ? "Verified campus peers" : profile.visibility === "department_only" ? "Department only" : "All colleges"}</span></div>
-          <div className="flex items-center justify-between"><span className="text-[#718078]">Campus Email</span><span className="font-medium text-[#17221e]">{profile.contactEmail}</span></div>
-          <div className="flex items-center justify-between"><span className="text-[#718078]">Discord / Telegram</span><span className="font-medium text-[#17221e]">{profile.discord} · {profile.telegram}</span></div>
-          {profile.linkedin && <div className="flex items-center justify-between"><span className="text-[#718078]">LinkedIn</span><span className="font-medium text-[#17221e]">{profile.linkedin}</span></div>}
-        </div>
+          {/* Academic & Contact Metadata Strip */}
+          <div className="mt-6 rounded-2xl border border-[#d9ddd1] bg-[#f8f7f1] p-4 text-xs space-y-2">
+            <div className="flex items-center justify-between"><span className="font-semibold text-[#17221e] flex items-center gap-1.5"><ShieldCheck size={14} className="text-[#779643]" /> Discovery Visibility</span><span className="rounded-full bg-[#e1efc4] px-2 py-0.5 text-[10px] font-bold text-[#496724]">{profile.visibility === "campus_only" ? "Verified campus peers" : profile.visibility === "department_only" ? "Department only" : "All colleges"}</span></div>
+            <div className="flex items-center justify-between"><span className="text-[#718078]">Campus Email</span><span className="font-medium text-[#17221e]">{profile.contactEmail}</span></div>
+            <div className="flex items-center justify-between"><span className="text-[#718078]">Discord / Telegram</span><span className="font-medium text-[#17221e]">{profile.discord} · {profile.telegram}</span></div>
+            {profile.linkedin && <div className="flex items-center justify-between"><span className="text-[#718078]">LinkedIn</span><span className="font-medium text-[#17221e]">{profile.linkedin}</span></div>}
+          </div>
 
-        {/* Interactive Skill Portfolio */}
-        <div className="mt-6"><div className="flex items-center justify-between"><p className="meta-label text-[#779643]">I can contribute ({skillsOffered.length})</p><button onClick={() => { setActiveProfileTab("skills"); setProfileOpen(true); }} className="text-xs font-semibold text-[#536f32] hover:underline flex items-center gap-1"><Plus size={13} /> Manage skills</button></div><div className="mt-3 space-y-2">{skillsOffered.map(skill => <div key={skill.id} className="flex items-center justify-between rounded-xl bg-[#f1f4ea] p-2.5 text-xs"><div className="flex items-center gap-2"><span className="font-semibold text-[#17221e]">{skill.name}</span><span className="rounded-full bg-[#c6f36b] px-2 py-0.5 text-[10px] font-bold text-[#17221e]">{skill.proficiency}</span><span className="text-[11px] text-[#718078]">({skill.category})</span></div>{skill.projectUrl ? <a href={skill.projectUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[11px] font-medium text-[#536f32] hover:underline"><ExternalLink size={12} /> Project</a> : <span className="text-[11px] text-[#9aa69c]">No link</span>}</div>)}</div></div>
+          {/* Interactive Skill Portfolio */}
+          <div className="mt-6"><div className="flex items-center justify-between"><p className="meta-label text-[#779643]">I can contribute ({skillsOffered.length})</p><button onClick={() => { setActiveProfileTab("skills"); setProfileOpen(true); }} className="text-xs font-semibold text-[#536f32] hover:underline flex items-center gap-1"><Plus size={13} /> Manage skills</button></div><div className="mt-3 space-y-2">{skillsOffered.map(skill => <div key={skill.id} className="flex items-center justify-between rounded-xl bg-[#f1f4ea] p-2.5 text-xs"><div className="flex items-center gap-2"><span className="font-semibold text-[#17221e]">{skill.name}</span><span className="rounded-full bg-[#c6f36b] px-2 py-0.5 text-[10px] font-bold text-[#17221e]">{skill.proficiency}</span><span className="text-[11px] text-[#718078]">({skill.category})</span></div>{skill.projectUrl ? <a href={skill.projectUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-[11px] font-medium text-[#536f32] hover:underline"><ExternalLink size={12} /> Project</a> : <span className="text-[11px] text-[#9aa69c]">No link</span>}</div>)}</div></div>
 
-        {/* Learning Goals & Target Interests */}
-        <div className="mt-6"><div className="flex items-center justify-between"><p className="meta-label text-[#557991]">I want to learn ({learningGoalsList.length})</p><button onClick={() => { setActiveProfileTab("goals"); setProfileOpen(true); }} className="text-xs font-semibold text-[#365970] hover:underline flex items-center gap-1"><Plus size={13} /> Manage wishlist</button></div><div className="mt-3 space-y-2">{learningGoalsList.map(goal => <div key={goal.id} className="flex items-center justify-between rounded-xl bg-[#eef4f9] p-2.5 text-xs"><div className="flex items-center gap-2"><span className="font-semibold text-[#17221e]">{goal.name}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${goal.priority === "Urgent" ? "bg-[#fcdcd7] text-[#a53b2d]" : goal.priority === "High" ? "bg-[#fed8b1] text-[#964e16]" : "bg-[#dbeaf5] text-[#365970]"}`}>{goal.priority}</span></div><span className="truncate max-w-[170px] text-[11px] text-[#718078]">{goal.note}</span></div>)}</div></div>
+          {/* Learning Goals & Target Interests */}
+          <div className="mt-6"><div className="flex items-center justify-between"><p className="meta-label text-[#557991]">I want to learn ({learningGoalsList.length})</p><button onClick={() => { setActiveProfileTab("goals"); setProfileOpen(true); }} className="text-xs font-semibold text-[#365970] hover:underline flex items-center gap-1"><Plus size={13} /> Manage wishlist</button></div><div className="mt-3 space-y-2">{learningGoalsList.map(goal => <div key={goal.id} className="flex items-center justify-between rounded-xl bg-[#eef4f9] p-2.5 text-xs"><div className="flex items-center gap-2"><span className="font-semibold text-[#17221e]">{goal.name}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${goal.priority === "Urgent" ? "bg-[#fcdcd7] text-[#a53b2d]" : goal.priority === "High" ? "bg-[#fed8b1] text-[#964e16]" : "bg-[#dbeaf5] text-[#365970]"}`}>{goal.priority}</span></div><span className="truncate max-w-[170px] text-[11px] text-[#718078]">{goal.note}</span></div>)}</div></div>
 
-        <Button variant="outline" onClick={() => { setEditProfile(profile); setActiveProfileTab("details"); setProfileOpen(true); }} className="mt-7 h-10 w-full rounded-full border-[#cbd4c6] text-xs font-semibold hover:bg-[#eef4ea]"><Settings2 size={14} /> Edit profile & skill inventory</Button></section><section className="space-y-4"><div className="rounded-[22px] bg-[#17221e] p-6 text-[#edf1e9]"><div className="flex items-start justify-between"><div><p className="meta-label text-[#9eb19e]">SkillLink Contribution Record</p><h2 className="display-font mt-3 text-3xl font-semibold tracking-[-.06em]">Built by showing up.</h2></div><Award size={24} className="text-[#c6f36b]" /></div><p className="mt-3 max-w-[540px] text-sm leading-6 text-[#b7c6b9]">A platform-specific record of your collaboration behaviour — not a claim about your character or a perfect measure of skill.</p><div className="mt-6 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]">12</p><p className="mt-1 text-xs text-[#b7c6b9]">exchanges completed</p></div><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]">{skillsOffered.length + 3}</p><p className="mt-1 text-xs text-[#b7c6b9]">skills contributed</p></div><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]">4.8</p><p className="mt-1 text-xs text-[#b7c6b9]">peer feedback</p></div></div></div><div className="rounded-[22px] border border-[#d9ddd1] bg-[#fffdf8] p-6"><div className="flex items-center justify-between"><div><p className="meta-label text-[#9aa69c]">Signals from peers</p><h3 className="display-font mt-1 text-xl font-semibold">How you collaborate</h3></div><Star size={19} className="fill-[#c6f36b] text-[#91af4a]" /></div>{[["Reliability", 96], ["Helpful context", 91], ["Communication", 88]].map(([label, value]) => <div key={label} className="mt-5"><div className="mb-2 flex justify-between text-xs font-semibold"><span>{label}</span><span className="text-[#658638]">{value}%</span></div><Progress value={value as number} className="h-2 bg-[#e8e9e2] [&>div]:bg-[#8daf50]" /></div>)}<div className="mt-6 flex items-start gap-2 rounded-xl bg-[#f1f4ea] p-3 text-xs leading-5 text-[#536159]"><MessageCircle size={14} className="mt-0.5 shrink-0 text-[#779643]" /> “Ananya made the hard parts feel easy to ask about.” — Maya, presentation design exchange</div></div></section></div>}
+          <Button variant="outline" onClick={() => { setEditProfile(profile); setActiveProfileTab("details"); setProfileOpen(true); }} className="mt-7 h-10 w-full rounded-full border-[#cbd4c6] text-xs font-semibold hover:bg-[#eef4ea]"><Settings2 size={14} /> Edit profile & skill inventory</Button></section><section className="space-y-4"><div className="rounded-[22px] bg-[#17221e] p-6 text-[#edf1e9]"><div className="flex items-start justify-between"><div><p className="meta-label text-[#9eb19e]">SkillLink Contribution Record</p><h2 className="display-font mt-3 text-3xl font-semibold tracking-[-.06em]">Built by showing up.</h2></div><Award size={24} className="text-[#c6f36b]" /></div><p className="mt-3 max-w-[540px] text-sm leading-6 text-[#b7c6b9]">A platform-specific record of your collaboration behaviour — not a claim about your character or a perfect measure of skill.</p><div className="mt-6 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]">12</p><p className="mt-1 text-xs text-[#b7c6b9]">exchanges completed</p></div><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]">{skillsOffered.length + 3}</p><p className="mt-1 text-xs text-[#b7c6b9]">skills contributed</p></div><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]">4.8</p><p className="mt-1 text-xs text-[#b7c6b9]">peer feedback</p></div></div></div><div className="rounded-[22px] border border-[#d9ddd1] bg-[#fffdf8] p-6"><div className="flex items-center justify-between"><div><p className="meta-label text-[#9aa69c]">Signals from peers</p><h3 className="display-font mt-1 text-xl font-semibold">How you collaborate</h3></div><Star size={19} className="fill-[#c6f36b] text-[#91af4a]" /></div>{[["Reliability", 96], ["Helpful context", 91], ["Communication", 88]].map(([label, value]) => <div key={label} className="mt-5"><div className="mb-2 flex justify-between text-xs font-semibold"><span>{label}</span><span className="text-[#658638]">{value}%</span></div><Progress value={value as number} className="h-2 bg-[#e8e9e2] [&>div]:bg-[#8daf50]" /></div>)}<div className="mt-6 flex items-start gap-2 rounded-xl bg-[#f1f4ea] p-3 text-xs leading-5 text-[#536159]"><MessageCircle size={14} className="mt-0.5 shrink-0 text-[#779643]" /> “Ananya made the hard parts feel easy to ask about.” — Maya, presentation design exchange</div></div></section></div>}
       </div>
     </main>
 
@@ -789,11 +1039,10 @@ export default function Home() {
                   key={mode}
                   type="button"
                   onClick={() => setFilters({ ...filters, kind: mode })}
-                  className={`rounded-xl border p-2 text-xs font-semibold ${
-                    filters.kind === mode
+                  className={`rounded-xl border p-2 text-xs font-semibold ${filters.kind === mode
                       ? "border-[#17221e] bg-[#17221e] text-[#f6f3ec]"
                       : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
-                  }`}
+                    }`}
                 >
                   {mode === "Reciprocal" ? "Reciprocal (Two-Way)" : mode === "Direct" ? "Direct (One-Way)" : "All Matches"}
                 </button>
@@ -817,11 +1066,10 @@ export default function Home() {
                   key={dept.value}
                   type="button"
                   onClick={() => setFilters({ ...filters, department: dept.value })}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    filters.department === dept.value
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${filters.department === dept.value
                       ? "bg-[#779643] text-white"
                       : "bg-[#f1f4ea] text-[#536159] hover:bg-[#e4edd7]"
-                  }`}
+                    }`}
                 >
                   {dept.label}
                 </button>
@@ -838,11 +1086,10 @@ export default function Home() {
                   key={tier}
                   type="button"
                   onClick={() => setFilters({ ...filters, proficiencyTier: tier })}
-                  className={`rounded-xl border p-2 text-xs font-semibold ${
-                    filters.proficiencyTier === tier
+                  className={`rounded-xl border p-2 text-xs font-semibold ${filters.proficiencyTier === tier
                       ? "border-[#779643] bg-[#e1efc4] text-[#496724]"
                       : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
-                  }`}
+                    }`}
                 >
                   {tier === "All" ? "Any Proficiency" : tier}
                 </button>
@@ -860,11 +1107,10 @@ export default function Home() {
                     key={mod}
                     type="button"
                     onClick={() => setFilters({ ...filters, modality: mod })}
-                    className={`rounded-xl border p-2 text-xs font-semibold ${
-                      filters.modality === mod
+                    className={`rounded-xl border p-2 text-xs font-semibold ${filters.modality === mod
                         ? "border-[#536f32] bg-[#c6f36b] text-[#17221e]"
                         : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
-                    }`}
+                      }`}
                   >
                     {mod}
                   </button>
@@ -880,11 +1126,10 @@ export default function Home() {
                     key={avail}
                     type="button"
                     onClick={() => setFilters({ ...filters, availability: avail })}
-                    className={`rounded-xl border p-2 text-xs font-semibold ${
-                      filters.availability === avail
+                    className={`rounded-xl border p-2 text-xs font-semibold ${filters.availability === avail
                         ? "border-[#365970] bg-[#bfd7ee] text-[#1a384f]"
                         : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
-                    }`}
+                      }`}
                   >
                     {avail}
                   </button>
@@ -906,11 +1151,10 @@ export default function Home() {
                   key={sort.value}
                   type="button"
                   onClick={() => setFilters({ ...filters, sortBy: sort.value as any })}
-                  className={`rounded-xl border p-2 text-xs font-semibold ${
-                    filters.sortBy === sort.value
+                  className={`rounded-xl border p-2 text-xs font-semibold ${filters.sortBy === sort.value
                       ? "border-[#17221e] bg-[#17221e] text-[#f6f3ec]"
                       : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
-                  }`}
+                    }`}
                 >
                   {sort.label}
                 </button>
@@ -951,7 +1195,7 @@ export default function Home() {
       </DialogContent>
     </Dialog>
 
-    <Dialog open={requestOpen} onOpenChange={(val) => { setRequestOpen(val); if(!val) { setAnalysisComplete(false); setExtractedSkills([]); } }}><DialogContent className="max-w-[560px] rounded-[24px] border-[#d9ddd1] bg-[#fffdf8]">
+    <Dialog open={requestOpen} onOpenChange={(val) => { setRequestOpen(val); if (!val) { setAnalysisComplete(false); setExtractedSkills([]); } }}><DialogContent className="max-w-[560px] rounded-[24px] border-[#d9ddd1] bg-[#fffdf8]">
       <DialogHeader>
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-[#c6f36b] px-2.5 py-0.5 text-[10px] font-bold text-[#17221e]">Feature 3</span>
@@ -975,7 +1219,7 @@ export default function Home() {
             <h3 className="font-semibold text-[#17221e]">{requestTitle}</h3>
             <p className="mt-1 text-xs text-[#526056] line-clamp-2">{requestText}</p>
           </div>
-          
+
           <div>
             <p className="text-xs font-bold text-[#365970] mb-2 flex items-center gap-1.5"><Target size={14} /> Identified Needs</p>
             <div className="flex flex-wrap gap-2">
@@ -1049,11 +1293,10 @@ export default function Home() {
             <button
               key={tab.id}
               onClick={() => setActiveProfileTab(tab.id as any)}
-              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
-                activeProfileTab === tab.id
+              className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${activeProfileTab === tab.id
                   ? "bg-[#17221e] text-[#f6f3ec]"
                   : "bg-[#f1f4ea] text-[#526356] hover:bg-[#e4ebd8]"
-              }`}
+                }`}
             >
               {tab.label}
             </button>
@@ -1169,11 +1412,10 @@ export default function Home() {
                     key={opt.value}
                     type="button"
                     onClick={() => setEditProfile({ ...editProfile, visibility: opt.value as any })}
-                    className={`rounded-xl border p-2.5 text-xs font-semibold ${
-                      editProfile.visibility === opt.value
+                    className={`rounded-xl border p-2.5 text-xs font-semibold ${editProfile.visibility === opt.value
                         ? "border-[#779643] bg-[#e1efc4] text-[#496724]"
                         : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
-                    }`}
+                      }`}
                   >
                     {opt.label}
                   </button>
@@ -1236,11 +1478,10 @@ export default function Home() {
                       key={level}
                       type="button"
                       onClick={() => setNewSkillProficiency(level)}
-                      className={`rounded-lg border py-1.5 text-xs font-semibold ${
-                        newSkillProficiency === level
+                      className={`rounded-lg border py-1.5 text-xs font-semibold ${newSkillProficiency === level
                           ? "border-[#536f32] bg-[#c6f36b] text-[#17221e]"
                           : "border-[#cbd4c6] bg-white text-[#536159]"
-                      }`}
+                        }`}
                     >
                       {level}
                     </button>
@@ -1275,13 +1516,12 @@ export default function Home() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-[#17221e]">{goal.name}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          goal.priority === "Urgent"
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${goal.priority === "Urgent"
                             ? "bg-[#fcdcd7] text-[#a53b2d]"
                             : goal.priority === "High"
-                            ? "bg-[#fed8b1] text-[#964e16]"
-                            : "bg-[#dbeaf5] text-[#365970]"
-                        }`}>
+                              ? "bg-[#fed8b1] text-[#964e16]"
+                              : "bg-[#dbeaf5] text-[#365970]"
+                          }`}>
                           {goal.priority}
                         </span>
                       </div>
@@ -1316,11 +1556,10 @@ export default function Home() {
                       key={p}
                       type="button"
                       onClick={() => setNewGoalPriority(p)}
-                      className={`rounded-lg border py-1.5 text-xs font-semibold ${
-                        newGoalPriority === p
+                      className={`rounded-lg border py-1.5 text-xs font-semibold ${newGoalPriority === p
                           ? "border-[#365970] bg-[#bfd7ee] text-[#1a384f]"
                           : "border-[#cbd4c6] bg-white text-[#536159]"
-                      }`}
+                        }`}
                     >
                       {p === "Urgent" ? "Urgent (Hackathon)" : p === "High" ? "High Priority" : "General Interest"}
                     </button>
