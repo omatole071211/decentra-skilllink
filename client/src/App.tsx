@@ -4,6 +4,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import Auth from "@/pages/Auth";
 import Home from "./pages/Home";
 
 function Router() {
@@ -16,6 +17,9 @@ function Router() {
       <Route path="/exchanges" component={Home} />
       <Route path="/history" component={Home} />
       <Route path="/profile" component={Home} />
+      <Route path="/login" component={() => <Auth initialMode="signin" />} />
+      <Route path="/signup" component={() => <Auth initialMode="signup" />} />
+      <Route path="/auth" component={() => <Auth initialMode="signin" />} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

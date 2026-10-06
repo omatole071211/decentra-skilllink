@@ -1,4 +1,4 @@
-import { startLogin } from "@/const";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,8 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowRight, Award, Bell, BookOpen, Check, CheckCircle2, CheckCheck, ChevronRight, CircleHelp, Clock, Compass, Copy, ExternalLink, FilePlus2, Filter, Globe, GraduationCap, Handshake, LayoutDashboard, Link2, Loader2, MapPin, Menu, MessageCircle, MoreHorizontal, NotebookPen, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Star, Target, Trash2, X, Zap } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowRight, Award, Bell, BookOpen, Check, CheckCircle2, CheckCheck, ChevronRight, CircleHelp, Clock, Compass, Copy, ExternalLink, FilePlus2, Filter, Globe, GraduationCap, Handshake, LayoutDashboard, Link2, Loader2, LogOut, MapPin, Menu, MessageCircle, MoreHorizontal, NotebookPen, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Star, Target, Trash2, X, Zap } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { computeCampusMatches, type ComputedMatch, type MatchFilters } from "@/lib/matchmakingEngine";
 
 const navItems = [
@@ -116,6 +116,7 @@ function MatchCard({ match, onOpen, onConnect, proposalSent }: { match: Computed
 
 export default function Home() {
   const [location, setLocation] = useLocation();
+  const { user, logout } = useAuth();
   const [mobileNav, setMobileNav] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<ComputedMatch | null>(null);
   const [matchOpen, setMatchOpen] = useState(false);
@@ -268,6 +269,19 @@ export default function Home() {
     linkedin: "linkedin.com/in/ananyakapoor",
     visibility: "campus_only" as "campus_only" | "public" | "department_only",
   });
+
+  useEffect(() => {
+    if (user?.name) {
+      const parts = user.name.split(" ");
+      const initials = parts.map(p => p[0]).slice(0, 2).join("").toUpperCase();
+      setProfile(prev => ({
+        ...prev,
+        name: user.name || prev.name,
+        initials: initials || prev.initials,
+        contactEmail: user.email || prev.contactEmail,
+      }));
+    }
+  }, [user]);
 
   const [skillsOffered, setSkillsOffered] = useState([
     { id: "1", name: "Python", proficiency: "Advanced" as "Beginner" | "Intermediate" | "Advanced" | "Expert", category: "Programming & ML", projectUrl: "https://github.com/ananya/fastapi-demo" },
@@ -674,7 +688,66 @@ export default function Home() {
             )}
           </PopoverContent>
         </Popover>
-        <div className="hidden h-7 w-px bg-[#d9ddd1] sm:block" /><Button variant="outline" onClick={() => { try { startLogin(); } catch { notify("Preview mode is active", "Manus login will be available when this project is connected."); } }} className="h-9 rounded-full border-[#cdd5c8] bg-transparent px-3 text-xs font-semibold text-[#3f5547] hover:bg-[#e8e6de]">Sign in <ArrowRight size={13} /></Button></div></div></header>
+        <div className="hidden h-7 w-px bg-[#d9ddd1] sm:block" />
+        {user ? (
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="flex items-center gap-2 rounded-full border border-[#cdd5c8] bg-[#fffdf8] py-1 pl-1.5 pr-3 text-xs font-semibold text-[#17221e] hover:border-[#779643] transition-all">
+                <Avatar className="h-7 w-7 border border-white">
+                  <AvatarFallback className="bg-[#c6f36b] text-[11px] font-bold text-[#17221e]">
+                    {user.name ? user.name.slice(0, 2).toUpperCase() : "ST"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="max-w-[110px] truncate">{user.name}</span>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" sideOffset={8} className="w-60 rounded-2xl border border-[#d9ddd1] bg-[#fffdf8] p-3 shadow-xl">
+              <div className="border-b border-[#e9ede2] pb-2.5">
+                <p className="text-xs font-bold text-[#17221e]">{user.name}</p>
+                <p className="text-[11px] text-[#718078] truncate">{user.email}</p>
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <span className="rounded-full bg-[#e1efc4] px-2 py-0.5 text-[10px] font-bold text-[#496724]">
+                    {user.role === "admin" ? "Campus Admin" : "Verified Student"}
+                  </span>
+                </div>
+              </div>
+              <div className="pt-2 space-y-1">
+                <button
+                  onClick={() => go("/profile")}
+                  className="w-full flex items-center gap-2 text-xs font-medium text-[#536159] hover:text-[#17221e] hover:bg-[#f6f8ef] px-2.5 py-1.5 rounded-lg text-left transition-colors"
+                >
+                  <Award size={14} /> My Profile & Record
+                </button>
+                <button
+                  onClick={async () => {
+                    await logout();
+                    toast.success("Signed out successfully");
+                  }}
+                  className="w-full flex items-center gap-2 text-xs font-medium text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-lg text-left transition-colors"
+                >
+                  <LogOut size={14} /> Sign out
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => go("/login")}
+              className="h-9 rounded-full border-[#cdd5c8] bg-transparent px-3 text-xs font-semibold text-[#3f5547] hover:bg-[#e8e6de]"
+            >
+              Sign in
+            </Button>
+            <Button
+              onClick={() => go("/signup")}
+              className="h-9 rounded-full bg-[#17221e] px-3.5 text-xs font-semibold text-[#f6f3ec] hover:bg-[#2c4034] shadow-xs"
+            >
+              Sign up
+            </Button>
+          </div>
+        )}
+      </div></div></header>
       <div className="container py-8 lg:py-11"><div className="fade-up flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="meta-label text-[#779643]">{meta.eyebrow}</p><h1 className="display-font mt-2 max-w-[700px] text-[34px] font-semibold leading-[1.03] tracking-[-.065em] text-[#17221e] sm:text-[46px]">{meta.title}</h1><p className="mt-3 max-w-[620px] text-[15px] leading-6 text-[#65746b]">{meta.description}</p></div><Button onClick={() => setRequestOpen(true)} className="h-11 shrink-0 rounded-full bg-[#17221e] px-5 text-sm font-semibold text-[#f6f3ec] shadow-[0_8px_20px_rgba(23,34,30,.13)] hover:bg-[#2c4034]"><Plus size={16} /> New request</Button></div>
 
         {currentSection === "overview" && <div className="mt-10 space-y-10"><section className="grid gap-4 sm:grid-cols-3"><Metric value="12" label="Exchanges completed" note="+3 since September" /><Metric value="4.8/5" label="Peer feedback" note="Across 11 completed swaps" tone="lime" /><Metric value="86%" label="Follow-through" note="Your strongest signal" tone="blue" /></section><section className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]"><div><SectionHeading eyebrow="Recommended next" title="A strong two-way fit" action={<button onClick={() => go("/matches")} className="hidden items-center gap-1 text-xs font-bold text-[#536f32] sm:flex">View all {computedMatches.length} matches <ArrowRight size={14} /></button>} />{topMatch ? (<div className="rounded-[22px] border border-[#ccd8c4] bg-[#e8f2d2] p-5 sm:p-6"><div className="flex flex-col justify-between gap-5 sm:flex-row"><div><div className="flex items-center gap-2"><Tag tone="lime">{topMatch.score}% indicative</Tag><span className="meta-label text-[#779643]">{topMatch.kind}</span></div><div className="mt-4 flex items-center gap-3"><Avatar className="h-12 w-12 border-2 border-white"><AvatarFallback style={{ background: topMatch.avatar }} className="font-bold text-[#17221e]">{topMatch.initials}</AvatarFallback></Avatar><div><h3 className="display-font text-xl font-semibold tracking-[-.04em]">{topMatch.name}</h3><p className="text-xs text-[#65746b]">{topMatch.role}</p></div></div></div><div className="rounded-2xl bg-[#f7faef]/80 p-4 sm:max-w-[235px]"><p className="meta-label text-[#779643]">The exchange</p><div className="mt-2 flex items-center gap-2 text-sm font-semibold"><span>{topMatch.need[0] || "Python"}</span><ArrowRight size={14} className="text-[#779643]" /><span>{topMatch.offer[0] || "UI/UX"}</span></div><p className="mt-2 text-xs leading-4 text-[#65746b]">{topMatch.mutualBenefit.synergyNote}</p></div></div><Separator className="my-5 bg-[#c9d9bc]" /><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><p className="max-w-[540px] text-sm leading-5 text-[#526056]"><Sparkles size={14} className="mr-1 inline text-[#779643]" /><strong className="text-[#34482b]">Why now?</strong> {topMatch.explanation}</p><div className="flex gap-2"><Button variant="outline" onClick={() => { setSelectedMatch(topMatch); setMatchOpen(true); }} className="h-9 rounded-full border-[#b9cba8] bg-transparent text-xs font-semibold hover:bg-[#f7faef]">Reasoning</Button><Button onClick={() => propose(topMatch)} disabled={proposalSent === topMatch.id} className="h-9 rounded-full bg-[#17221e] text-xs text-[#f6f3ec] hover:bg-[#2c4034]">{proposalSent === topMatch.id ? "Proposal sent" : "Propose exchange"}</Button></div></div></div>) : (<div className="rounded-[22px] border border-[#d9ddd1] bg-[#fffdf8] p-6 text-center text-xs text-[#718078]">Update your skill inventory or learning goals to generate recommendations.</div>)}</div><div><SectionHeading eyebrow="Your board" title="Open requests" action={<button onClick={() => go("/requests")} className="hidden items-center gap-1 text-xs font-bold text-[#536f32] sm:flex">Manage <ArrowRight size={14} /></button>} /><div className="space-y-3"><div className="lift rounded-2xl border border-[#d9ddd1] bg-[#fffdf8] p-4"><div className="flex items-start justify-between gap-4"><div className="flex gap-3"><div className="rounded-xl bg-[#dbeaf5] p-2.5 text-[#365970]"><Target size={17} /></div><div><h3 className="font-semibold">UI for hackathon website</h3><p className="mt-1 text-xs text-[#718078]">Need UI/UX · 2 responses</p></div></div><MoreHorizontal size={17} className="text-[#9aa69c]" /></div><div className="mt-4 flex items-center justify-between"><span className="text-xs font-semibold text-[#536159]">Open for matching</span><span className="text-xs text-[#718078]">Updated 2h ago</span></div></div><div className="lift rounded-2xl border border-[#d9ddd1] bg-[#fffdf8] p-4"><div className="flex items-start gap-3"><div className="rounded-xl bg-[#ece6d1] p-2.5 text-[#776643]"><GraduationCap size={17} /></div><div><h3 className="font-semibold">Practice product storytelling</h3><p className="mt-1 text-xs text-[#718078]">Want to learn · 1 response</p></div></div><div className="mt-4 flex items-center justify-between"><span className="text-xs font-semibold text-[#536159]">Open for matching</span><span className="text-xs text-[#718078]">Updated yesterday</span></div></div></div></div></section><section><SectionHeading eyebrow="Keep the loop going" title="Recent exchanges" action={<button onClick={() => go("/history")} className="flex items-center gap-1 text-xs font-bold text-[#536f32]">Full history <ArrowRight size={14} /></button>} /><div className="overflow-hidden rounded-2xl border border-[#d9ddd1] bg-[#fffdf8]"><div className="hidden grid-cols-[1.4fr_1fr_1fr_100px] gap-4 border-b border-[#e3e5dd] px-5 py-3 sm:grid"><span className="meta-label text-[#9aa69c]">Collaborator</span><span className="meta-label text-[#9aa69c]">Exchange</span><span className="meta-label text-[#9aa69c]">Date</span><span className="meta-label text-right text-[#9aa69c]">Status</span></div>{history.map(exchange => <div key={exchange.with} className="grid gap-3 border-b border-[#e9eae4] px-5 py-4 last:border-0 sm:grid-cols-[1.4fr_1fr_1fr_100px] sm:items-center sm:gap-4"><div className="flex items-center gap-3"><Avatar className="h-8 w-8"><AvatarFallback style={{ background: exchange.color }} className="text-[10px] font-bold text-[#17221e]">{exchange.initials}</AvatarFallback></Avatar><span className="text-sm font-semibold">{exchange.with}</span></div><span className="text-sm text-[#65746b]">{exchange.skill}</span><span className="text-sm text-[#65746b]">{exchange.date}</span><span className="flex items-center gap-1.5 text-xs font-semibold text-[#618033] sm:justify-end"><CheckCircle2 size={14} /> Completed</span></div>)}</div></section></div>}

@@ -52,6 +52,8 @@ export default function DashboardLayout({
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
+  const [, setLocation] = useLocation();
+
   if (loading) {
     return <DashboardLayoutSkeleton />
   }
@@ -65,13 +67,13 @@ export default function DashboardLayout({
               Sign in to continue
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              Access to this dashboard requires authentication. Continue to sign in or create an account.
             </p>
           </div>
           <Button
-            onClick={() => startLogin()}
+            onClick={() => setLocation("/login")}
             size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
+            className="w-full shadow-lg hover:shadow-xl transition-all bg-[#17221e] hover:bg-[#2c4034] text-[#f6f3ec]"
           >
             Sign in
           </Button>

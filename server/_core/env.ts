@@ -1,7 +1,7 @@
 // Platform values are read at use time. See the Webdev service/authentication skills.
 export const ENV = {
-  get appId() { return process.env.MANUS_PROJECT_ID ?? ""; },
-  get cookieSecret() { return process.env.MANUS_JWT_SECRET ?? ""; },
+  get appId() { return process.env.MANUS_PROJECT_ID || "skilllink-app"; },
+  get cookieSecret() { return process.env.MANUS_JWT_SECRET || process.env.SESSION_SECRET || "skilllink-secure-session-key-dev-32chars"; },
   get databaseUrl() { return process.env.DATABASE_URL ?? ""; },
   get oAuthServerUrl() { return process.env.MANUS_OAUTH_API_URL ?? ""; },
   // Preserve the legacy hint when supplied; otherwise roles remain application data.

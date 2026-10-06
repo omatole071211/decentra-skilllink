@@ -1,0 +1,50 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "openId": "usr_e08fa432098b4d51",
+      "name": "Yash Metkar",
+      "email": "yash@northbridge.edu",
+      "passwordHash": "6bcd44a03e9c6f6edc69a70a3541622d:b14d3bfc34b42b1364411acd7ce6e4f122605937c3de219f8df9e73877de6e08f235f174bb0749336685465f27108d2b8ecb6dea68294ddce22198a98b7183cd",
+      "loginMethod": "email",
+      "role": "user",
+      "createdAt": "2026-10-06T19:01:28.505Z",
+      "updatedAt": "2026-10-06T19:02:04.672Z",
+      "lastSignedIn": "2026-10-06T19:02:04.669Z"
+    },
+    {
+      "id": 2,
+      "openId": "usr_201279fa8628409c",
+      "name": "Ananya Kapoor",
+      "email": "ananya.k@northbridge.edu",
+      "passwordHash": "8cc0ad801f1a11c9c4a5d20b93d9c107:b192b3f70314a6aef4748fd7f5c2c69ae0bb80c9502b5f25ccb203ff9e124a62169d5ae649d76f487cab133d053b278f52efd2e62b97c6e324569c0cb19b086b",
+      "loginMethod": "email",
+      "role": "user",
+      "createdAt": "2026-10-06T19:04:10.807Z",
+      "updatedAt": "2026-10-06T19:14:09.583Z",
+      "lastSignedIn": "2026-10-06T19:14:09.580Z"
+    }
+  ],
+  "studentProfiles": [
+    {
+      "id": 1,
+      "userId": 1,
+      "institution": "Northbridge University",
+      "department": "Computer Science",
+      "bio": null,
+      "visibility": "campus_only",
+      "createdAt": "2026-10-06T19:01:28.510Z",
+      "updatedAt": "2026-10-06T19:01:28.510Z"
+    },
+    {
+      "id": 2,
+      "userId": 2,
+      "institution": "Northbridge University",
+      "department": "Computer Science",
+      "bio": null,
+      "visibility": "campus_only",
+      "createdAt": "2026-10-06T19:04:10.811Z",
+      "updatedAt": "2026-10-06T19:04:10.811Z"
+    }
+  ]
+}
