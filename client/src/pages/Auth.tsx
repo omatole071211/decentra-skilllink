@@ -38,6 +38,21 @@ export default function Auth({ initialMode = "signin" }: AuthProps) {
     }
   }, [location]);
 
+  // Live Exchange Samples for animated cycling showcase
+  const exchangeSamples = [
+    { offer: "Python & FastAPI", seek: "UI/UX & Design", synergy: "94% synergy", time: "3 hrs/wk" },
+    { offer: "Rust & Systems", seek: "Quantitative Finance", synergy: "97% synergy", time: "4 hrs/wk" },
+    { offer: "React & Tailwind", seek: "Motion Design & 3D", synergy: "91% synergy", time: "2 hrs/wk" },
+  ];
+  const [activeSampleIdx, setActiveSampleIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveSampleIdx((prev) => (prev + 1) % exchangeSamples.length);
+    }, 3200);
+    return () => clearInterval(interval);
+  }, []);
+
   // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -198,26 +213,49 @@ export default function Auth({ initialMode = "signin" }: AuthProps) {
                 Say goodbye to cold emails and unorganized group chats. SkillLink pairs college peers based on mutual synergy, verified follow-through, and structured collaboration.
               </p>
 
-              {/* Reciprocity Showcase Strip */}
-              <div className="mt-8 rounded-2xl bg-white/[0.06] border border-white/10 p-5 backdrop-blur-sm">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#c6f36b]">Live Mutual Exchange Fit</p>
-                <div className="mt-3 flex items-center justify-between text-xs font-semibold">
+              {/* Reciprocity Showcase Strip with Live Animated Cycling Preview */}
+              <div className="mt-8 rounded-2xl bg-white/[0.06] border border-white/10 p-5 backdrop-blur-sm transition-all duration-300">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#c6f36b] opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[#c6f36b]"></span>
+                    </span>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#c6f36b]">Live Mutual Exchange Fit</p>
+                  </div>
+                  {/* Carousel indicator dots */}
+                  <div className="flex items-center gap-1.5">
+                    {exchangeSamples.map((_, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setActiveSampleIdx(idx)}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
+                          idx === activeSampleIdx ? "w-4 bg-[#c6f36b]" : "w-1.5 bg-white/20 hover:bg-white/40"
+                        }`}
+                        aria-label={`Go to preview sample ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-3.5 flex items-center justify-between text-xs font-semibold min-h-[28px] transition-all duration-300">
                   <div className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-[#c6f36b]" />
-                    <span>Python & FastAPI</span>
+                    <span className="transition-opacity duration-300">{exchangeSamples[activeSampleIdx].offer}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[#c6f36b] px-2 py-0.5 rounded-full bg-[#c6f36b]/15 text-[11px]">
-                    <span>94% synergy</span>
+                  <div className="flex items-center gap-1.5 text-[#17221e] px-2.5 py-0.5 rounded-full bg-[#c6f36b] text-[11px] font-bold shadow-xs transition-transform duration-300">
+                    <span>{exchangeSamples[activeSampleIdx].synergy}</span>
                   </div>
                   <div className="flex items-center gap-2 text-[#bfd7ee]">
-                    <span>UI/UX & Design</span>
+                    <span className="transition-opacity duration-300">{exchangeSamples[activeSampleIdx].seek}</span>
                     <span className="h-2 w-2 rounded-full bg-[#bfd7ee]" />
                   </div>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-[#8ea492]">
                   <span className="flex items-center gap-1"><ShieldCheck size={12} className="text-[#c6f36b]" /> Verified campus trust</span>
-                  <span>Northbridge University</span>
+                  <span>Commitment: {exchangeSamples[activeSampleIdx].time}</span>
                 </div>
               </div>
             </div>

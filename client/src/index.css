@@ -155,5 +155,30 @@
   [data-sonner-toast][data-type="error"] {
     border-left: 5px solid #b95142 !important;
   }
+
+  /* Stitch Design Enhancements: Micro-animations & Interactive Effects */
+  @keyframes ping-glow {
+    0% { transform: scale(1); opacity: 0.85; }
+    70% { transform: scale(2); opacity: 0; }
+    100% { transform: scale(2); opacity: 0; }
+  }
+
+  .animate-ping-glow {
+    animation: ping-glow 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+
+  /* Smooth Progress Bar Transitions */
+  [data-slot="progress-indicator"],
+  .progress-bar-fill {
+    transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), width 0.9s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  }
+
+  /* Staggered Children Animations */
+  .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+  .stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+  .stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+  .stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+  .stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+  .stagger-children > *:nth-child(6) { animation-delay: 300ms; }
 }
 

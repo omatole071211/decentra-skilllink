@@ -12,6 +12,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ArrowRight, Award, Bell, BookOpen, Check, CheckCircle2, CheckCheck, ChevronRight, CircleHelp, Clock, Compass, Copy, ExternalLink, FilePlus2, Filter, Globe, GraduationCap, Handshake, LayoutDashboard, Link2, Loader2, LogOut, MapPin, Menu, MessageCircle, MoreHorizontal, NotebookPen, Plus, Search, Settings2, ShieldCheck, SlidersHorizontal, Sparkles, Star, Target, Trash2, X, Zap } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { computeCampusMatches, type ComputedMatch, type MatchFilters } from "@/lib/matchmakingEngine";
+import { ScoreArc } from "@/components/ScoreArc";
+import { CountUp } from "@/components/CountUp";
+import { TiltCard } from "@/components/TiltCard";
+import { ScrollReveal } from "@/components/ScrollReveal";
 
 const navItems = [
   { label: "Overview", path: "/", icon: LayoutDashboard },
@@ -43,15 +47,49 @@ function Tag({ children, tone = "neutral" }: { children: React.ReactNode; tone?:
   return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${styles[tone]}`}>{children}</span>;
 }
 function SectionHeading({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) { return <div className="mb-4 flex items-end justify-between gap-4"><div><p className="meta-label text-[#779643]">{eyebrow}</p><h2 className="display-font mt-1 text-[22px] font-semibold tracking-[-.04em] text-[#17221e]">{title}</h2></div>{action}</div>; }
-function Metric({ value, label, note, tone = "dark" }: { value: string; label: string; note: string; tone?: "dark" | "lime" | "blue" }) {
+function Metric({ value, label, note, tone = "dark", showArc = false }: { value: string; label: string; note: string; tone?: "dark" | "lime" | "blue"; showArc?: boolean }) {
   const bg = tone === "lime" ? "bg-[#c6f36b]" : tone === "blue" ? "bg-[#dbeaf5]" : "bg-[#17221e]";
-  return <div className={`rounded-2xl ${bg} p-5 ${tone === "dark" ? "text-[#f6f3ec]" : "text-[#17221e]"}`}><p className="display-font text-[31px] font-semibold tracking-[-.08em]">{value}</p><p className="mt-1 text-sm font-semibold">{label}</p><p className={`mt-3 text-xs ${tone === "dark" ? "text-[#b8c6ba]" : "text-[#536159]"}`}>{note}</p></div>;
+
+  const renderValue = () => {
+    if (value === "12") {
+      return <CountUp value={12} />;
+    }
+    if (value === "4.8/5") {
+      return (
+        <>
+          <CountUp value={4.8} decimals={1} />
+          <span className="text-xl font-medium opacity-80">/5</span>
+        </>
+      );
+    }
+    if (value === "86%") {
+      return <CountUp value={86} suffix="%" />;
+    }
+    return value;
+  };
+
+  return (
+    <div className={`rounded-2xl ${bg} p-5 flex flex-col justify-between transition-all hover:shadow-[0_12px_24px_rgba(23,34,30,0.06)] ${tone === "dark" ? "text-[#f6f3ec]" : "text-[#17221e]"}`}>
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="display-font text-[31px] font-semibold tracking-[-.08em]">{renderValue()}</p>
+          <p className="mt-1 text-sm font-semibold">{label}</p>
+        </div>
+        {showArc && (
+          <div className="mt-0.5">
+            <ScoreArc score={86} size={46} strokeWidth={4} tone="blue" showScore={false} />
+          </div>
+        )}
+      </div>
+      <p className={`mt-3 text-xs ${tone === "dark" ? "text-[#b8c6ba]" : "text-[#536159]"}`}>{note}</p>
+    </div>
+  );
 }
 
-// Additional Feature 4 & 5: Enhanced Match Card with Modality, Schedule & Reciprocity
+// Enhanced Match Card with 3D Tilt responsiveness & Radial SVG Score Gauge
 function MatchCard({ match, onOpen, onConnect, proposalSent }: { match: ComputedMatch; onOpen: () => void; onConnect: () => void; proposalSent?: boolean }) {
   return (
-    <article className="lift rounded-2xl border border-[#d9ddd1] bg-[#fffdf8] p-5 flex flex-col justify-between">
+    <TiltCard className="rounded-2xl border border-[#d9ddd1] bg-[#fffdf8] p-5 flex flex-col justify-between hover:border-[#b7c5ae] hover:shadow-[0_14px_32px_rgba(23,34,30,0.08)]">
       <div>
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -63,9 +101,18 @@ function MatchCard({ match, onOpen, onConnect, proposalSent }: { match: Computed
               <p className="mt-0.5 text-xs text-[#718078]">{match.role}</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="display-font text-2xl font-semibold tracking-[-.06em] text-[#17221e]">{match.score}%</p>
-            <p className={`meta-label ${match.kind === "Reciprocal" ? "text-[#779643]" : "text-[#557991]"}`}>{match.kind} match</p>
+          {/* Radial SVG Score Arc */}
+          <div className="flex items-center gap-2">
+            <div className="text-right hidden sm:block">
+              <p className={`meta-label ${match.kind === "Reciprocal" ? "text-[#779643]" : "text-[#557991]"}`}>{match.kind}</p>
+              <p className="text-[10px] text-[#718078]">Synergy</p>
+            </div>
+            <ScoreArc
+              score={match.score}
+              size={50}
+              strokeWidth={4.2}
+              tone={match.kind === "Reciprocal" ? "lime" : "blue"}
+            />
           </div>
         </div>
 
@@ -89,7 +136,7 @@ function MatchCard({ match, onOpen, onConnect, proposalSent }: { match: Computed
         </div>
 
         {/* AI Match Explanation */}
-        <div className="mt-4 rounded-xl bg-[#f1f4ea] p-3.5">
+        <div className="mt-4 rounded-xl bg-[#f1f4ea] p-3.5 transition-colors hover:bg-[#ebf0e2]">
           <div className="flex items-center gap-2">
             <Sparkles size={14} className="text-[#779643]" />
             <span className="text-xs font-bold text-[#3d552d]">Why this surfaced</span>
@@ -106,11 +153,11 @@ function MatchCard({ match, onOpen, onConnect, proposalSent }: { match: Computed
           <CheckCircle2 size={14} className="text-[#759b3e]" />
           <span className="font-medium text-[#17221e]">{match.rating.toFixed(1)}</span> record ({match.completedExchanges} swaps)
         </div>
-        <Button className="h-9 rounded-full bg-[#17221e] px-4 text-xs text-[#f6f3ec] hover:bg-[#2c4034]" onClick={onConnect} disabled={proposalSent}>
+        <Button className="h-9 rounded-full bg-[#17221e] px-4 text-xs text-[#f6f3ec] hover:bg-[#2c4034] transition-all hover:scale-102" onClick={onConnect} disabled={proposalSent}>
           {proposalSent ? <><Check size={14} /> Proposal sent</> : <>Propose exchange <ArrowRight size={14} /></>}
         </Button>
       </div>
-    </article>
+    </TiltCard>
   );
 }
 
@@ -273,7 +320,7 @@ export default function Home() {
   useEffect(() => {
     if (user?.name) {
       const parts = user.name.split(" ");
-      const initials = parts.map(p => p[0]).slice(0, 2).join("").toUpperCase();
+      const initials = parts.map((p: string) => p[0]).slice(0, 2).join("").toUpperCase();
       setProfile(prev => ({
         ...prev,
         name: user.name || prev.name,
@@ -494,7 +541,7 @@ export default function Home() {
       <div className="flex items-center justify-between px-3"><div className="flex items-center gap-3"><LogoMark /><span className="display-font text-[18px] font-semibold tracking-[-.04em]">SkillLink</span></div><button className="lg:hidden" onClick={() => setMobileNav(false)} aria-label="Close navigation"><X size={18} /></button></div>
       <div className="mt-8 rounded-2xl border border-[#314239] bg-[#213128] p-3.5"><div className="flex items-start gap-2.5"><div className="mt-0.5 rounded-full bg-[#c6f36b] p-1 text-[#17221e]"><Zap size={12} fill="currentColor" /></div><div><p className="text-xs font-semibold text-[#dce8d9]">Your reciprocity streak</p><p className="mt-1 text-[12px] leading-4 text-[#9eb19e]">2 exchanges completed this month.</p><div className="mt-3 flex gap-1"><span className="h-1.5 w-8 rounded-full bg-[#c6f36b]" /><span className="h-1.5 w-8 rounded-full bg-[#c6f36b]" /><span className="h-1.5 w-8 rounded-full bg-[#556e5c]" /><span className="h-1.5 w-8 rounded-full bg-[#556e5c]" /></div></div></div></div>
       <div className="mt-8"><p className="meta-label px-3 text-[#819487]">Workspace</p><nav className="mt-2 space-y-1">{workspaceNavItems.map(item => { const active = item.path === activePath; return <button key={item.path} onClick={() => go(item.path)} className={`focus-ring flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors ${active ? "bg-[#c6f36b] font-bold text-[#17221e]" : "text-[#b7c6b9] hover:bg-[#263a2e] hover:text-white"}`}><item.icon size={17} strokeWidth={active ? 2.5 : 1.8} /><span className="flex-1">{item.label}</span>{item.count && <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${active ? "bg-[#17221e] text-[#c6f36b]" : "bg-[#34493a] text-[#c7d7c7]"}`}>{item.count}</span>}</button>; })}</nav></div>
-      <div className="mt-auto"><div className="flex items-center gap-3 rounded-2xl bg-[#213128] p-3"><Avatar className="h-9 w-9 border border-[#5b7763]"><AvatarFallback className="bg-[#e7c6af] text-xs font-bold text-[#17221e]">{profile.initials}</AvatarFallback></Avatar><div className="min-w-0 flex-1"><p className="truncate text-sm font-semibold">{profile.name}</p><p className="truncate text-[11px] text-[#9eb19e]">{profile.institution}</p></div><button onClick={() => go("/profile")} className="text-[#9eb19e] hover:text-[#c6f36b]" aria-label="Open profile"><ChevronRight size={16} /></button></div></div>
+      <div className="mt-auto"><div className="flex items-center gap-3 rounded-2xl bg-[#213128] p-3"><Avatar className="h-9 w-9 border border-[#5b7763]"><AvatarFallback className="bg-[#e7c6af] text-xs font-bold text-[#17221e]">{profile.initials}</AvatarFallback></Avatar><button onClick={() => go("/profile")} className="text-[#9eb19e] hover:text-[#c6f36b] ml-auto" aria-label="Open profile"><ChevronRight size={16} /></button></div></div>
     </aside>
     {mobileNav && <button className="fixed inset-0 z-30 bg-[#17221e]/40 lg:hidden" onClick={() => setMobileNav(false)} aria-label="Close navigation overlay" />}
     <main className="min-h-screen lg:pl-[278px]">
@@ -508,7 +555,8 @@ export default function Home() {
               <Bell size={18} />
               {unreadCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#17221e] px-1 text-[9px] font-bold text-[#c6f36b] ring-2 ring-[#f6f3ec]">
-                  {unreadCount}
+                  <span className="animate-ping-glow absolute inline-flex h-full w-full rounded-full bg-[#c6f36b] opacity-80 pointer-events-none" />
+                  <span className="relative">{unreadCount}</span>
                 </span>
               )}
             </button>
@@ -547,21 +595,19 @@ export default function Home() {
               <div className="mt-3 flex items-center gap-1.5">
                 <button
                   onClick={() => setNotifFilter("all")}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
-                    notifFilter === "all"
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${notifFilter === "all"
                       ? "bg-[#17221e] text-[#f6f3ec]"
                       : "bg-[#eae7dd] text-[#65746b] hover:bg-[#dedbd0] hover:text-[#17221e]"
-                  }`}
+                    }`}
                 >
                   All ({notifications.length})
                 </button>
                 <button
                   onClick={() => setNotifFilter("unread")}
-                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${
-                    notifFilter === "unread"
+                  className={`rounded-full px-2.5 py-1 text-[11px] font-semibold transition-all ${notifFilter === "unread"
                       ? "bg-[#17221e] text-[#f6f3ec]"
                       : "bg-[#eae7dd] text-[#65746b] hover:bg-[#dedbd0] hover:text-[#17221e]"
-                  }`}
+                    }`}
                 >
                   Unread ({unreadCount})
                 </button>
@@ -594,20 +640,18 @@ export default function Home() {
                   <div
                     key={item.id}
                     onClick={() => markNotificationRead(item.id, item.actionPath)}
-                    className={`group relative cursor-pointer p-4 transition-all hover:bg-[#f6f8ef] ${
-                      !item.read ? "bg-[#fffdf8] border-l-4 border-l-[#779643]" : "bg-white/60 opacity-85 hover:opacity-100"
-                    }`}
+                    className={`group relative cursor-pointer p-4 transition-all hover:bg-[#f6f8ef] ${!item.read ? "bg-[#fffdf8] border-l-4 border-l-[#779643]" : "bg-white/60 opacity-85 hover:opacity-100"
+                      }`}
                   >
                     <div className="flex items-start gap-3">
                       {/* Icon avatar */}
                       <div
-                        className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-xs ${
-                          item.type === "match"
+                        className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl shadow-xs ${item.type === "match"
                             ? "bg-[#c6f36b] text-[#17221e]"
                             : item.type === "exchange"
-                            ? "bg-[#dbeaf5] text-[#2c536d]"
-                            : "bg-[#fcedcc] text-[#734f0e]"
-                        }`}
+                              ? "bg-[#dbeaf5] text-[#2c536d]"
+                              : "bg-[#fcedcc] text-[#734f0e]"
+                          }`}
                       >
                         {item.type === "match" ? (
                           <Sparkles size={15} />
@@ -750,7 +794,113 @@ export default function Home() {
       </div></div></header>
       <div className="container py-8 lg:py-11"><div className="fade-up flex flex-col justify-between gap-5 md:flex-row md:items-end"><div><p className="meta-label text-[#779643]">{meta.eyebrow}</p><h1 className="display-font mt-2 max-w-[700px] text-[34px] font-semibold leading-[1.03] tracking-[-.065em] text-[#17221e] sm:text-[46px]">{meta.title}</h1><p className="mt-3 max-w-[620px] text-[15px] leading-6 text-[#65746b]">{meta.description}</p></div><Button onClick={() => setRequestOpen(true)} className="h-11 shrink-0 rounded-full bg-[#17221e] px-5 text-sm font-semibold text-[#f6f3ec] shadow-[0_8px_20px_rgba(23,34,30,.13)] hover:bg-[#2c4034]"><Plus size={16} /> New request</Button></div>
 
-        {currentSection === "overview" && <div className="mt-10 space-y-10"><section className="grid gap-4 sm:grid-cols-3"><Metric value="12" label="Exchanges completed" note="+3 since September" /><Metric value="4.8/5" label="Peer feedback" note="Across 11 completed swaps" tone="lime" /><Metric value="86%" label="Follow-through" note="Your strongest signal" tone="blue" /></section><section className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]"><div><SectionHeading eyebrow="Recommended next" title="A strong two-way fit" action={<button onClick={() => go("/matches")} className="hidden items-center gap-1 text-xs font-bold text-[#536f32] sm:flex">View all {computedMatches.length} matches <ArrowRight size={14} /></button>} />{topMatch ? (<div className="rounded-[22px] border border-[#ccd8c4] bg-[#e8f2d2] p-5 sm:p-6"><div className="flex flex-col justify-between gap-5 sm:flex-row"><div><div className="flex items-center gap-2"><Tag tone="lime">{topMatch.score}% indicative</Tag><span className="meta-label text-[#779643]">{topMatch.kind}</span></div><div className="mt-4 flex items-center gap-3"><Avatar className="h-12 w-12 border-2 border-white"><AvatarFallback style={{ background: topMatch.avatar }} className="font-bold text-[#17221e]">{topMatch.initials}</AvatarFallback></Avatar><div><h3 className="display-font text-xl font-semibold tracking-[-.04em]">{topMatch.name}</h3><p className="text-xs text-[#65746b]">{topMatch.role}</p></div></div></div><div className="rounded-2xl bg-[#f7faef]/80 p-4 sm:max-w-[235px]"><p className="meta-label text-[#779643]">The exchange</p><div className="mt-2 flex items-center gap-2 text-sm font-semibold"><span>{topMatch.need[0] || "Python"}</span><ArrowRight size={14} className="text-[#779643]" /><span>{topMatch.offer[0] || "UI/UX"}</span></div><p className="mt-2 text-xs leading-4 text-[#65746b]">{topMatch.mutualBenefit.synergyNote}</p></div></div><Separator className="my-5 bg-[#c9d9bc]" /><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><p className="max-w-[540px] text-sm leading-5 text-[#526056]"><Sparkles size={14} className="mr-1 inline text-[#779643]" /><strong className="text-[#34482b]">Why now?</strong> {topMatch.explanation}</p><div className="flex gap-2"><Button variant="outline" onClick={() => { setSelectedMatch(topMatch); setMatchOpen(true); }} className="h-9 rounded-full border-[#b9cba8] bg-transparent text-xs font-semibold hover:bg-[#f7faef]">Reasoning</Button><Button onClick={() => propose(topMatch)} disabled={proposalSent === topMatch.id} className="h-9 rounded-full bg-[#17221e] text-xs text-[#f6f3ec] hover:bg-[#2c4034]">{proposalSent === topMatch.id ? "Proposal sent" : "Propose exchange"}</Button></div></div></div>) : (<div className="rounded-[22px] border border-[#d9ddd1] bg-[#fffdf8] p-6 text-center text-xs text-[#718078]">Update your skill inventory or learning goals to generate recommendations.</div>)}</div><div><SectionHeading eyebrow="Your board" title="Open requests" action={<button onClick={() => go("/requests")} className="hidden items-center gap-1 text-xs font-bold text-[#536f32] sm:flex">Manage <ArrowRight size={14} /></button>} /><div className="space-y-3"><div className="lift rounded-2xl border border-[#d9ddd1] bg-[#fffdf8] p-4"><div className="flex items-start justify-between gap-4"><div className="flex gap-3"><div className="rounded-xl bg-[#dbeaf5] p-2.5 text-[#365970]"><Target size={17} /></div><div><h3 className="font-semibold">UI for hackathon website</h3><p className="mt-1 text-xs text-[#718078]">Need UI/UX · 2 responses</p></div></div><MoreHorizontal size={17} className="text-[#9aa69c]" /></div><div className="mt-4 flex items-center justify-between"><span className="text-xs font-semibold text-[#536159]">Open for matching</span><span className="text-xs text-[#718078]">Updated 2h ago</span></div></div><div className="lift rounded-2xl border border-[#d9ddd1] bg-[#fffdf8] p-4"><div className="flex items-start gap-3"><div className="rounded-xl bg-[#ece6d1] p-2.5 text-[#776643]"><GraduationCap size={17} /></div><div><h3 className="font-semibold">Practice product storytelling</h3><p className="mt-1 text-xs text-[#718078]">Want to learn · 1 response</p></div></div><div className="mt-4 flex items-center justify-between"><span className="text-xs font-semibold text-[#536159]">Open for matching</span><span className="text-xs text-[#718078]">Updated yesterday</span></div></div></div></div></section><section><SectionHeading eyebrow="Keep the loop going" title="Recent exchanges" action={<button onClick={() => go("/history")} className="flex items-center gap-1 text-xs font-bold text-[#536f32]">Full history <ArrowRight size={14} /></button>} /><div className="overflow-hidden rounded-2xl border border-[#d9ddd1] bg-[#fffdf8]"><div className="hidden grid-cols-[1.4fr_1fr_1fr_100px] gap-4 border-b border-[#e3e5dd] px-5 py-3 sm:grid"><span className="meta-label text-[#9aa69c]">Collaborator</span><span className="meta-label text-[#9aa69c]">Exchange</span><span className="meta-label text-[#9aa69c]">Date</span><span className="meta-label text-right text-[#9aa69c]">Status</span></div>{history.map(exchange => <div key={exchange.with} className="grid gap-3 border-b border-[#e9eae4] px-5 py-4 last:border-0 sm:grid-cols-[1.4fr_1fr_1fr_100px] sm:items-center sm:gap-4"><div className="flex items-center gap-3"><Avatar className="h-8 w-8"><AvatarFallback style={{ background: exchange.color }} className="text-[10px] font-bold text-[#17221e]">{exchange.initials}</AvatarFallback></Avatar><span className="text-sm font-semibold">{exchange.with}</span></div><span className="text-sm text-[#65746b]">{exchange.skill}</span><span className="text-sm text-[#65746b]">{exchange.date}</span><span className="flex items-center gap-1.5 text-xs font-semibold text-[#618033] sm:justify-end"><CheckCircle2 size={14} /> Completed</span></div>)}</div></section></div>}
+        {currentSection === "overview" && (
+          <div className="mt-10 space-y-10">
+            <ScrollReveal delayMs={30}>
+              <section className="grid gap-4 sm:grid-cols-3">
+                <Metric value="12" label="Exchanges completed" note="+3 since September" />
+                <Metric value="4.8/5" label="Peer feedback" note="Across 11 completed swaps" tone="lime" />
+                <Metric value="86%" label="Follow-through" note="Your strongest signal" tone="blue" showArc={true} />
+              </section>
+            </ScrollReveal>
+            <ScrollReveal delayMs={80}>
+              <section className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
+                <div>
+                  <SectionHeading eyebrow="Recommended next" title="A strong two-way fit" action={<button onClick={() => go("/matches")} className="hidden items-center gap-1 text-xs font-bold text-[#536f32] sm:flex">View all {computedMatches.length} matches <ArrowRight size={14} /></button>} />
+                  {topMatch ? (
+                    <div className="rounded-[22px] border border-[#ccd8c4] bg-[#e8f2d2] p-5 sm:p-6 transition-all hover:shadow-[0_12px_28px_rgba(23,34,30,0.06)]">
+                      <div className="flex flex-col justify-between gap-5 sm:flex-row">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Tag tone="lime">{topMatch.score}% indicative</Tag>
+                            <span className="meta-label text-[#779643]">{topMatch.kind}</span>
+                          </div>
+                          <div className="mt-4 flex items-center gap-3">
+                            <Avatar className="h-12 w-12 border-2 border-white shadow-sm">
+                              <AvatarFallback style={{ background: topMatch.avatar }} className="font-bold text-[#17221e]">{topMatch.initials}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h3 className="display-font text-xl font-semibold tracking-[-.04em]">{topMatch.name}</h3>
+                              <p className="text-xs text-[#65746b]">{topMatch.role}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="rounded-2xl bg-[#f7faef]/90 p-4 sm:max-w-[235px] border border-[#d9e2cf]">
+                          <p className="meta-label text-[#779643]">The exchange</p>
+                          <div className="mt-2 flex items-center gap-2 text-sm font-semibold">
+                            <span>{topMatch.need[0] || "Python"}</span>
+                            <ArrowRight size={14} className="text-[#779643]" />
+                            <span>{topMatch.offer[0] || "UI/UX"}</span>
+                          </div>
+                          <p className="mt-2 text-xs leading-4 text-[#65746b]">{topMatch.mutualBenefit.synergyNote}</p>
+                        </div>
+                      </div>
+                      <Separator className="my-5 bg-[#c9d9bc]" />
+                      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+                        <p className="max-w-[540px] text-sm leading-5 text-[#526056]">
+                          <Sparkles size={14} className="mr-1 inline text-[#779643]" />
+                          <strong className="text-[#34482b]">Why now?</strong> {topMatch.explanation}
+                        </p>
+                        <div className="flex gap-2">
+                          <Button variant="outline" onClick={() => { setSelectedMatch(topMatch); setMatchOpen(true); }} className="h-9 rounded-full border-[#b9cba8] bg-transparent text-xs font-semibold hover:bg-[#f7faef]">Reasoning</Button>
+                          <Button onClick={() => propose(topMatch)} disabled={proposalSent === topMatch.id} className="h-9 rounded-full bg-[#17221e] text-xs text-[#f6f3ec] hover:bg-[#2c4034]">{proposalSent === topMatch.id ? "Proposal sent" : "Propose exchange"}</Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-[22px] border border-[#d9ddd1] bg-[#fffdf8] p-6 text-center text-xs text-[#718078]">Update your skill inventory or learning goals to generate recommendations.</div>
+                  )}
+                </div>
+                <div>
+                  <SectionHeading eyebrow="Your board" title="Open requests" action={<button onClick={() => go("/requests")} className="hidden items-center gap-1 text-xs font-bold text-[#536f32] sm:flex">Manage <ArrowRight size={14} /></button>} />
+                  <div className="space-y-3">
+                    <div className="lift rounded-2xl border border-[#d9ddd1] bg-[#fffdf8] p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex gap-3">
+                          <div className="rounded-xl bg-[#dbeaf5] p-2.5 text-[#365970]"><Target size={17} /></div>
+                          <div><h3 className="font-semibold">UI for hackathon website</h3><p className="mt-1 text-xs text-[#718078]">Need UI/UX · 2 responses</p></div>
+                        </div>
+                        <MoreHorizontal size={17} className="text-[#9aa69c]" />
+                      </div>
+                      <div className="mt-4 flex items-center justify-between"><span className="text-xs font-semibold text-[#536159]">Open for matching</span><span className="text-xs text-[#718078]">Updated 2h ago</span></div>
+                    </div>
+                    <div className="lift rounded-2xl border border-[#d9ddd1] bg-[#fffdf8] p-4">
+                      <div className="flex items-start gap-3">
+                        <div className="rounded-xl bg-[#ece6d1] p-2.5 text-[#776643]"><GraduationCap size={17} /></div>
+                        <div><h3 className="font-semibold">Practice product storytelling</h3><p className="mt-1 text-xs text-[#718078]">Want to learn · 1 response</p></div>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between"><span className="text-xs font-semibold text-[#536159]">Open for matching</span><span className="text-xs text-[#718078]">Updated yesterday</span></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </ScrollReveal>
+            <ScrollReveal delayMs={120}>
+              <section>
+                <SectionHeading eyebrow="Keep the loop going" title="Recent exchanges" action={<button onClick={() => go("/history")} className="flex items-center gap-1 text-xs font-bold text-[#536f32]">Full history <ArrowRight size={14} /></button>} />
+                <div className="overflow-hidden rounded-2xl border border-[#d9ddd1] bg-[#fffdf8]">
+                  <div className="hidden grid-cols-[1.4fr_1fr_1fr_100px] gap-4 border-b border-[#e3e5dd] px-5 py-3 sm:grid">
+                    <span className="meta-label text-[#9aa69c]">Collaborator</span>
+                    <span className="meta-label text-[#9aa69c]">Exchange</span>
+                    <span className="meta-label text-[#9aa69c]">Date</span>
+                    <span className="meta-label text-right text-[#9aa69c]">Status</span>
+                  </div>
+                  {history.map(exchange => (
+                    <div key={exchange.with} className="grid gap-3 border-b border-[#e9eae4] px-5 py-4 last:border-0 sm:grid-cols-[1.4fr_1fr_1fr_100px] sm:items-center sm:gap-4 transition-colors hover:bg-[#faf9f4]">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8"><AvatarFallback style={{ background: exchange.color }} className="text-[10px] font-bold text-[#17221e]">{exchange.initials}</AvatarFallback></Avatar>
+                        <span className="text-sm font-semibold">{exchange.with}</span>
+                      </div>
+                      <span className="text-sm text-[#65746b]">{exchange.skill}</span>
+                      <span className="text-sm text-[#65746b]">{exchange.date}</span>
+                      <span className="flex items-center gap-1.5 text-xs font-semibold text-[#618033] sm:justify-end"><CheckCircle2 size={14} /> Completed</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </ScrollReveal>
+          </div>
+        )}
 
         {currentSection === "matches" && (
           <div className="mt-10">
@@ -762,8 +912,8 @@ export default function Home() {
                     key={value}
                     onClick={() => setFilters(prev => ({ ...prev, kind: value }))}
                     className={`whitespace-nowrap rounded-full border px-3.5 py-2 text-xs font-semibold transition-colors ${filters.kind === value
-                        ? "border-[#17221e] bg-[#17221e] text-[#f6f3ec]"
-                        : "border-[#d1d8cc] bg-transparent text-[#65746b] hover:bg-[#e8e6de]"
+                      ? "border-[#17221e] bg-[#17221e] text-[#f6f3ec]"
+                      : "border-[#d1d8cc] bg-transparent text-[#65746b] hover:bg-[#e8e6de]"
                       }`}
                   >
                     {value === "Reciprocal" ? "Reciprocal (Two-Way)" : value === "Direct" ? "Direct (One-Way)" : "All matches"}
@@ -854,17 +1004,18 @@ export default function Home() {
             {/* Results Grid */}
             {computedMatches.length > 0 ? (
               <div className="grid gap-4 xl:grid-cols-2">
-                {computedMatches.map(match => (
-                  <MatchCard
-                    key={match.id}
-                    match={match}
-                    proposalSent={proposalSent === match.id}
-                    onOpen={() => {
-                      setSelectedMatch(match);
-                      setMatchOpen(true);
-                    }}
-                    onConnect={() => propose(match)}
-                  />
+                {computedMatches.map((match, idx) => (
+                  <ScrollReveal key={match.id} delayMs={(idx % 6) * 50}>
+                    <MatchCard
+                      match={match}
+                      proposalSent={proposalSent === match.id}
+                      onOpen={() => {
+                        setSelectedMatch(match);
+                        setMatchOpen(true);
+                      }}
+                      onConnect={() => propose(match)}
+                    />
+                  </ScrollReveal>
                 ))}
               </div>
             ) : (
@@ -915,7 +1066,7 @@ export default function Home() {
           {/* Learning Goals & Target Interests */}
           <div className="mt-6"><div className="flex items-center justify-between"><p className="meta-label text-[#557991]">I want to learn ({learningGoalsList.length})</p><button onClick={() => { setActiveProfileTab("goals"); setProfileOpen(true); }} className="text-xs font-semibold text-[#365970] hover:underline flex items-center gap-1"><Plus size={13} /> Manage wishlist</button></div><div className="mt-3 space-y-2">{learningGoalsList.map(goal => <div key={goal.id} className="flex items-center justify-between rounded-xl bg-[#eef4f9] p-2.5 text-xs"><div className="flex items-center gap-2"><span className="font-semibold text-[#17221e]">{goal.name}</span><span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${goal.priority === "Urgent" ? "bg-[#fcdcd7] text-[#a53b2d]" : goal.priority === "High" ? "bg-[#fed8b1] text-[#964e16]" : "bg-[#dbeaf5] text-[#365970]"}`}>{goal.priority}</span></div><span className="truncate max-w-[170px] text-[11px] text-[#718078]">{goal.note}</span></div>)}</div></div>
 
-          <Button variant="outline" onClick={() => { setEditProfile(profile); setActiveProfileTab("details"); setProfileOpen(true); }} className="mt-7 h-10 w-full rounded-full border-[#cbd4c6] text-xs font-semibold hover:bg-[#eef4ea]"><Settings2 size={14} /> Edit profile & skill inventory</Button></section><section className="space-y-4"><div className="rounded-[22px] bg-[#17221e] p-6 text-[#edf1e9]"><div className="flex items-start justify-between"><div><p className="meta-label text-[#9eb19e]">SkillLink Contribution Record</p><h2 className="display-font mt-3 text-3xl font-semibold tracking-[-.06em]">Built by showing up.</h2></div><Award size={24} className="text-[#c6f36b]" /></div><p className="mt-3 max-w-[540px] text-sm leading-6 text-[#b7c6b9]">A platform-specific record of your collaboration behaviour — not a claim about your character or a perfect measure of skill.</p><div className="mt-6 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]">12</p><p className="mt-1 text-xs text-[#b7c6b9]">exchanges completed</p></div><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]">{skillsOffered.length + 3}</p><p className="mt-1 text-xs text-[#b7c6b9]">skills contributed</p></div><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]">4.8</p><p className="mt-1 text-xs text-[#b7c6b9]">peer feedback</p></div></div></div><div className="rounded-[22px] border border-[#d9ddd1] bg-[#fffdf8] p-6"><div className="flex items-center justify-between"><div><p className="meta-label text-[#9aa69c]">Signals from peers</p><h3 className="display-font mt-1 text-xl font-semibold">How you collaborate</h3></div><Star size={19} className="fill-[#c6f36b] text-[#91af4a]" /></div>{[["Reliability", 96], ["Helpful context", 91], ["Communication", 88]].map(([label, value]) => <div key={label} className="mt-5"><div className="mb-2 flex justify-between text-xs font-semibold"><span>{label}</span><span className="text-[#658638]">{value}%</span></div><Progress value={value as number} className="h-2 bg-[#e8e9e2] [&>div]:bg-[#8daf50]" /></div>)}<div className="mt-6 flex items-start gap-2 rounded-xl bg-[#f1f4ea] p-3 text-xs leading-5 text-[#536159]"><MessageCircle size={14} className="mt-0.5 shrink-0 text-[#779643]" /> “Ananya made the hard parts feel easy to ask about.” — Maya, presentation design exchange</div></div></section></div>}
+          <Button variant="outline" onClick={() => { setEditProfile(profile); setActiveProfileTab("details"); setProfileOpen(true); }} className="mt-7 h-10 w-full rounded-full border-[#cbd4c6] text-xs font-semibold hover:bg-[#eef4ea]"><Settings2 size={14} /> Edit profile & skill inventory</Button></section><section className="space-y-4"><ScrollReveal delayMs={40}><div className="rounded-[22px] bg-[#17221e] p-6 text-[#edf1e9]"><div className="flex items-start justify-between"><div><p className="meta-label text-[#9eb19e]">SkillLink Contribution Record</p><h2 className="display-font mt-3 text-3xl font-semibold tracking-[-.06em]">Built by showing up.</h2></div><Award size={24} className="text-[#c6f36b]" /></div><p className="mt-3 max-w-[540px] text-sm leading-6 text-[#b7c6b9]">A platform-specific record of your collaboration behaviour — not a claim about your character or a perfect measure of skill.</p><div className="mt-6 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]"><CountUp value={12} /></p><p className="mt-1 text-xs text-[#b7c6b9]">exchanges completed</p></div><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]"><CountUp value={skillsOffered.length + 3} /></p><p className="mt-1 text-xs text-[#b7c6b9]">skills contributed</p></div><div className="rounded-2xl bg-[#26382c] p-4"><p className="display-font text-2xl font-semibold text-[#c6f36b]"><CountUp value={4.8} decimals={1} /></p><p className="mt-1 text-xs text-[#b7c6b9]">peer feedback</p></div></div></div></ScrollReveal><ScrollReveal delayMs={90}><div className="rounded-[22px] border border-[#d9ddd1] bg-[#fffdf8] p-6"><div className="flex items-center justify-between"><div><p className="meta-label text-[#9aa69c]">Signals from peers</p><h3 className="display-font mt-1 text-xl font-semibold">How you collaborate</h3></div><Star size={19} className="fill-[#c6f36b] text-[#91af4a]" /></div>{[["Reliability", 96], ["Helpful context", 91], ["Communication", 88]].map(([label, value]) => <div key={label} className="mt-5"><div className="mb-2 flex justify-between text-xs font-semibold"><span>{label}</span><span className="text-[#658638]">{value}%</span></div><Progress value={value as number} className="h-2 bg-[#e8e9e2] [&>div]:bg-[#8daf50] [&>div]:transition-all [&>div]:duration-1000" /></div>)}<div className="mt-6 flex items-start gap-2 rounded-xl bg-[#f1f4ea] p-3 text-xs leading-5 text-[#536159]"><MessageCircle size={14} className="mt-0.5 shrink-0 text-[#779643]" /> “Ananya made the hard parts feel easy to ask about.” — Maya, presentation design exchange</div></div></ScrollReveal></section></div>}
       </div>
     </main>
 
@@ -1113,8 +1264,8 @@ export default function Home() {
                   type="button"
                   onClick={() => setFilters({ ...filters, kind: mode })}
                   className={`rounded-xl border p-2 text-xs font-semibold ${filters.kind === mode
-                      ? "border-[#17221e] bg-[#17221e] text-[#f6f3ec]"
-                      : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
+                    ? "border-[#17221e] bg-[#17221e] text-[#f6f3ec]"
+                    : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
                     }`}
                 >
                   {mode === "Reciprocal" ? "Reciprocal (Two-Way)" : mode === "Direct" ? "Direct (One-Way)" : "All Matches"}
@@ -1140,8 +1291,8 @@ export default function Home() {
                   type="button"
                   onClick={() => setFilters({ ...filters, department: dept.value })}
                   className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${filters.department === dept.value
-                      ? "bg-[#779643] text-white"
-                      : "bg-[#f1f4ea] text-[#536159] hover:bg-[#e4edd7]"
+                    ? "bg-[#779643] text-white"
+                    : "bg-[#f1f4ea] text-[#536159] hover:bg-[#e4edd7]"
                     }`}
                 >
                   {dept.label}
@@ -1160,8 +1311,8 @@ export default function Home() {
                   type="button"
                   onClick={() => setFilters({ ...filters, proficiencyTier: tier })}
                   className={`rounded-xl border p-2 text-xs font-semibold ${filters.proficiencyTier === tier
-                      ? "border-[#779643] bg-[#e1efc4] text-[#496724]"
-                      : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
+                    ? "border-[#779643] bg-[#e1efc4] text-[#496724]"
+                    : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
                     }`}
                 >
                   {tier === "All" ? "Any Proficiency" : tier}
@@ -1181,8 +1332,8 @@ export default function Home() {
                     type="button"
                     onClick={() => setFilters({ ...filters, modality: mod })}
                     className={`rounded-xl border p-2 text-xs font-semibold ${filters.modality === mod
-                        ? "border-[#536f32] bg-[#c6f36b] text-[#17221e]"
-                        : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
+                      ? "border-[#536f32] bg-[#c6f36b] text-[#17221e]"
+                      : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
                       }`}
                   >
                     {mod}
@@ -1200,8 +1351,8 @@ export default function Home() {
                     type="button"
                     onClick={() => setFilters({ ...filters, availability: avail })}
                     className={`rounded-xl border p-2 text-xs font-semibold ${filters.availability === avail
-                        ? "border-[#365970] bg-[#bfd7ee] text-[#1a384f]"
-                        : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
+                      ? "border-[#365970] bg-[#bfd7ee] text-[#1a384f]"
+                      : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
                       }`}
                   >
                     {avail}
@@ -1225,8 +1376,8 @@ export default function Home() {
                   type="button"
                   onClick={() => setFilters({ ...filters, sortBy: sort.value as any })}
                   className={`rounded-xl border p-2 text-xs font-semibold ${filters.sortBy === sort.value
-                      ? "border-[#17221e] bg-[#17221e] text-[#f6f3ec]"
-                      : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
+                    ? "border-[#17221e] bg-[#17221e] text-[#f6f3ec]"
+                    : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
                     }`}
                 >
                   {sort.label}
@@ -1367,8 +1518,8 @@ export default function Home() {
               key={tab.id}
               onClick={() => setActiveProfileTab(tab.id as any)}
               className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${activeProfileTab === tab.id
-                  ? "bg-[#17221e] text-[#f6f3ec]"
-                  : "bg-[#f1f4ea] text-[#526356] hover:bg-[#e4ebd8]"
+                ? "bg-[#17221e] text-[#f6f3ec]"
+                : "bg-[#f1f4ea] text-[#526356] hover:bg-[#e4ebd8]"
                 }`}
             >
               {tab.label}
@@ -1486,8 +1637,8 @@ export default function Home() {
                     type="button"
                     onClick={() => setEditProfile({ ...editProfile, visibility: opt.value as any })}
                     className={`rounded-xl border p-2.5 text-xs font-semibold ${editProfile.visibility === opt.value
-                        ? "border-[#779643] bg-[#e1efc4] text-[#496724]"
-                        : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
+                      ? "border-[#779643] bg-[#e1efc4] text-[#496724]"
+                      : "border-[#cbd4c6] bg-[#f8f7f1] text-[#536159]"
                       }`}
                   >
                     {opt.label}
@@ -1552,8 +1703,8 @@ export default function Home() {
                       type="button"
                       onClick={() => setNewSkillProficiency(level)}
                       className={`rounded-lg border py-1.5 text-xs font-semibold ${newSkillProficiency === level
-                          ? "border-[#536f32] bg-[#c6f36b] text-[#17221e]"
-                          : "border-[#cbd4c6] bg-white text-[#536159]"
+                        ? "border-[#536f32] bg-[#c6f36b] text-[#17221e]"
+                        : "border-[#cbd4c6] bg-white text-[#536159]"
                         }`}
                     >
                       {level}
@@ -1590,10 +1741,10 @@ export default function Home() {
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-[#17221e]">{goal.name}</span>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${goal.priority === "Urgent"
-                            ? "bg-[#fcdcd7] text-[#a53b2d]"
-                            : goal.priority === "High"
-                              ? "bg-[#fed8b1] text-[#964e16]"
-                              : "bg-[#dbeaf5] text-[#365970]"
+                          ? "bg-[#fcdcd7] text-[#a53b2d]"
+                          : goal.priority === "High"
+                            ? "bg-[#fed8b1] text-[#964e16]"
+                            : "bg-[#dbeaf5] text-[#365970]"
                           }`}>
                           {goal.priority}
                         </span>
@@ -1630,8 +1781,8 @@ export default function Home() {
                       type="button"
                       onClick={() => setNewGoalPriority(p)}
                       className={`rounded-lg border py-1.5 text-xs font-semibold ${newGoalPriority === p
-                          ? "border-[#365970] bg-[#bfd7ee] text-[#1a384f]"
-                          : "border-[#cbd4c6] bg-white text-[#536159]"
+                        ? "border-[#365970] bg-[#bfd7ee] text-[#1a384f]"
+                        : "border-[#cbd4c6] bg-white text-[#536159]"
                         }`}
                     >
                       {p === "Urgent" ? "Urgent (Hackathon)" : p === "High" ? "High Priority" : "General Interest"}
